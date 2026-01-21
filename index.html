@@ -3,45 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>EAR Meter v3.1 — Δ⇄⟳ Tracker</title>
+    <title>EAR Pilot — SIMULATORE</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Space+Grotesk:wght@300;400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Space+Grotesk:wght@400;700&display=swap');
         
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         :root {
-            --bg-dark: #0a0a0f;
-            --bg-card: #12121a;
-            --delta-color: #3b82f6;
-            --relation-color: #10b981;
-            --process-color: #ef4444;
-            --text-primary: #f0f0f0;
-            --text-secondary: #888;
-            --alert-color: #f59e0b;
+            --bg: #0a0a0f;
+            --card: #12121a;
+            --delta: #3b82f6;
+            --relation: #10b981;
+            --process: #ef4444;
+            --warning: #f59e0b;
+            --text: #f0f0f0;
+            --muted: #888;
+            --road: #1a1a2e;
+            --grass: #0d3320;
         }
         
         body {
             font-family: 'JetBrains Mono', monospace;
-            background: var(--bg-dark);
-            color: var(--text-primary);
+            background: var(--bg);
+            color: var(--text);
             min-height: 100vh;
-            min-height: 100dvh;
             overflow-x: hidden;
         }
         
         .container {
-            display: flex;
-            flex-direction: column;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
             min-height: 100vh;
-            min-height: 100dvh;
-            padding: 10px;
-            gap: 10px;
+            padding: 8px;
+            gap: 8px;
         }
         
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Header */
         .header {
+            grid-column: span 2;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding: 8px 12px;
+            background: var(--card);
+            border-radius: 12px;
+        }
+        
+        @media (max-width: 900px) {
+            .header { grid-column: span 1; }
         }
         
         .logo {
@@ -50,222 +65,302 @@
             font-weight: 700;
         }
         
-        .logo span { opacity: 0.5; font-weight: 300; }
+        .logo span { color: var(--process); }
+        .logo .sim { color: var(--warning); font-size: 0.7rem; margin-left: 8px; }
         
-        .status {
+        .mode-indicator {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
             font-size: 0.7rem;
-            padding: 5px 10px;
-            background: var(--bg-card);
-            border-radius: 16px;
+            padding: 6px 12px;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid var(--relation);
+            border-radius: 20px;
+            color: var(--relation);
         }
         
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--process-color);
-        }
-        
-        .status-dot.active { background: var(--relation-color); }
-        
-        /* Video Area */
-        .video-area {
-            position: relative;
-            flex: 1;
-            min-height: 280px;
-            background: var(--bg-card);
+        /* Panels */
+        .panel {
+            background: var(--card);
             border-radius: 12px;
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
         
+        .panel-header {
+            padding: 10px 14px;
+            background: rgba(255,255,255,0.03);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--muted);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .panel-content {
+            flex: 1;
+            position: relative;
+            min-height: 300px;
+        }
+        
+        /* Video Area */
         #video {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
         
-        #overlayCanvas {
+        #overlay {
             position: absolute;
-            top: 0;
-            left: 0;
+            top: 0; left: 0;
             width: 100%;
             height: 100%;
             pointer-events: none;
         }
         
-        .video-hud {
+        /* Zones overlay */
+        .zones-overlay {
             position: absolute;
-            top: 8px;
-            left: 8px;
-            right: 8px;
+            top: 0; left: 0; right: 0; bottom: 0;
             display: flex;
-            justify-content: space-between;
             pointer-events: none;
         }
         
-        .hud-item {
-            font-size: 0.65rem;
-            background: rgba(0,0,0,0.7);
-            padding: 4px 8px;
-            border-radius: 4px;
-        }
-        
-        .video-bottom {
-            position: absolute;
-            bottom: 8px;
-            left: 8px;
-            right: 8px;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-        }
-        
-        .k-display {
-            font-size: 1.3rem;
-            font-weight: 700;
-            padding: 6px 12px;
-            background: rgba(0,0,0,0.75);
-            border-radius: 10px;
-            border: 2px solid transparent;
-            transition: all 0.2s;
-        }
-        
-        .k-display.alert {
-            border-color: var(--alert-color);
-            box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);
-        }
-        
-        .k-display small { font-size: 0.55rem; opacity: 0.6; }
-        
-        .zones-count {
-            font-size: 0.7rem;
-            background: rgba(0,0,0,0.7);
-            padding: 6px 10px;
-            border-radius: 8px;
-        }
-        
-        .zones-count span { font-weight: 700; color: var(--process-color); }
-        
-        /* Compact Meters */
-        .meters {
-            display: flex;
-            gap: 8px;
-            padding: 12px;
-            background: var(--bg-card);
-            border-radius: 12px;
-        }
-        
-        .meter {
+        .zone {
             flex: 1;
-            text-align: center;
-        }
-        
-        .meter-header {
+            border-right: 2px dashed rgba(255,255,255,0.15);
             display: flex;
-            justify-content: center;
-            align-items: baseline;
-            gap: 4px;
-            margin-bottom: 6px;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 8px;
         }
         
-        .meter-symbol {
-            font-size: 1.1rem;
-            font-weight: 700;
+        .zone:last-child { border-right: none; }
+        
+        .zone-label {
+            font-size: 0.55rem;
+            text-align: center;
+            background: rgba(0,0,0,0.7);
+            padding: 3px 6px;
+            border-radius: 4px;
+            margin-bottom: 4px;
         }
         
-        .meter-symbol.delta { color: var(--delta-color); }
-        .meter-symbol.relation { color: var(--relation-color); }
-        .meter-symbol.process { color: var(--process-color); }
-        
-        .meter-value {
-            font-size: 0.9rem;
-            font-weight: 600;
-        }
-        
-        .meter-bar-bg {
+        .zone-bar {
             height: 6px;
             background: rgba(255,255,255,0.1);
             border-radius: 3px;
             overflow: hidden;
         }
         
-        .meter-bar {
+        .zone-bar-fill {
             height: 100%;
-            border-radius: 3px;
-            transition: width 0.15s;
+            background: var(--process);
+            transition: width 0.1s;
         }
         
-        .meter-bar.delta { background: var(--delta-color); }
-        .meter-bar.relation { background: var(--relation-color); }
-        .meter-bar.process { background: var(--process-color); }
-        
-        .meter-label {
-            font-size: 0.55rem;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            margin-top: 4px;
+        /* Command display */
+        .command-display {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-shadow: 0 0 20px rgba(0,0,0,0.9);
+            opacity: 0.9;
         }
         
-        /* State Row */
-        .state-row {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 6px;
-        }
+        .cmd-forward { color: var(--relation); }
+        .cmd-back { color: var(--warning); }
+        .cmd-left { color: var(--delta); }
+        .cmd-right { color: var(--delta); }
+        .cmd-stop { color: var(--process); }
         
-        .state-card {
-            padding: 10px 6px;
-            background: var(--bg-card);
-            border-radius: 10px;
-            text-align: center;
-        }
-        
-        .state-card h4 {
-            font-size: 0.5rem;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            margin-bottom: 4px;
-        }
-        
-        .state-card .value {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 0.85rem;
-            font-weight: 600;
-        }
-        
-        .value.stable { color: var(--relation-color); }
-        .value.warning { color: var(--alert-color); }
-        .value.alert { color: var(--process-color); }
-        
-        /* Timeline */
-        .timeline {
-            padding: 10px;
-            background: var(--bg-card);
-            border-radius: 10px;
-        }
-        
-        .timeline h4 {
-            font-size: 0.55rem;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            margin-bottom: 6px;
-        }
-        
-        #timelineCanvas {
+        /* Simulator Canvas */
+        #simCanvas {
             width: 100%;
-            height: 40px;
-            background: rgba(255,255,255,0.02);
+            height: 100%;
+            background: var(--grass);
+        }
+        
+        /* HUD */
+        .hud {
+            position: absolute;
+            top: 8px; left: 8px; right: 8px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.6rem;
+        }
+        
+        .hud-item {
+            background: rgba(0,0,0,0.8);
+            padding: 4px 8px;
             border-radius: 4px;
         }
         
-        /* Start Overlay */
+        /* Controls area */
+        .controls-area {
+            grid-column: span 2;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+        
+        @media (max-width: 900px) {
+            .controls-area {
+                grid-column: span 1;
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        .control-card {
+            background: var(--card);
+            border-radius: 10px;
+            padding: 12px;
+        }
+        
+        .control-card h4 {
+            font-size: 0.55rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+        
+        /* Mode selector */
+        .mode-btns {
+            display: flex;
+            gap: 4px;
+        }
+        
+        .mode-btn {
+            flex: 1;
+            padding: 8px 4px;
+            font-size: 0.65rem;
+            font-family: inherit;
+            background: rgba(255,255,255,0.05);
+            color: var(--text);
+            border: 2px solid transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .mode-btn.active {
+            border-color: var(--relation);
+            background: rgba(16, 185, 129, 0.1);
+        }
+        
+        /* EAR Display */
+        .ear-display {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .ear-item {
+            flex: 1;
+            text-align: center;
+        }
+        
+        .ear-symbol {
+            font-size: 1rem;
+            font-weight: 700;
+        }
+        
+        .ear-symbol.delta { color: var(--delta); }
+        .ear-symbol.relation { color: var(--relation); }
+        .ear-symbol.process { color: var(--process); }
+        
+        .ear-value {
+            font-size: 0.7rem;
+            color: var(--muted);
+        }
+        
+        /* Steering display */
+        .steering {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .steering-bar {
+            flex: 1;
+            height: 16px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 4px;
+            position: relative;
+        }
+        
+        .steering-center {
+            position: absolute;
+            top: 0; bottom: 0;
+            left: 50%;
+            width: 2px;
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .steering-indicator {
+            position: absolute;
+            top: 2px; bottom: 2px;
+            width: 16px;
+            background: var(--delta);
+            border-radius: 3px;
+            left: calc(50% - 8px);
+            transition: left 0.1s;
+        }
+        
+        .steering-value {
+            width: 35px;
+            text-align: center;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+        
+        /* Command log */
+        .command-log {
+            grid-column: span 2;
+            background: var(--card);
+            border-radius: 10px;
+            padding: 12px;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+        
+        @media (max-width: 900px) {
+            .command-log { grid-column: span 1; }
+        }
+        
+        .command-log h4 {
+            font-size: 0.55rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+        
+        .log-entries {
+            font-size: 0.6rem;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--muted);
+        }
+        
+        .log-entry {
+            padding: 2px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+        }
+        
+        .log-entry .cmd { color: var(--relation); font-weight: 700; }
+        .log-entry .time { color: var(--muted); opacity: 0.5; }
+        
+        /* Start overlay */
         .start-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(10, 10, 15, 0.97);
+            background: rgba(10,10,15,0.98);
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -279,396 +374,698 @@
         
         .start-title {
             font-family: 'Space Grotesk', sans-serif;
-            font-size: 2rem;
+            font-size: 2.2rem;
             font-weight: 700;
-            margin-bottom: 6px;
-            background: linear-gradient(135deg, var(--delta-color), var(--relation-color), var(--process-color));
+            background: linear-gradient(135deg, var(--delta), var(--warning));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            margin-bottom: 4px;
         }
         
-        .start-subtitle {
-            color: var(--text-secondary);
-            margin-bottom: 20px;
+        .start-sub {
+            color: var(--warning);
             font-size: 0.9rem;
+            margin-bottom: 8px;
         }
         
-        .explanation {
-            max-width: 300px;
-            margin-bottom: 20px;
-            text-align: left;
+        .start-desc {
+            color: var(--muted);
+            font-size: 0.75rem;
+            max-width: 400px;
+            margin-bottom: 24px;
+            line-height: 1.5;
         }
-        
-        .exp-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px;
-            margin-bottom: 6px;
-            background: var(--bg-card);
-            border-radius: 8px;
-        }
-        
-        .exp-symbol {
-            font-size: 1.2rem;
-            font-weight: 700;
-            width: 32px;
-            text-align: center;
-        }
-        
-        .exp-text strong { display: block; font-size: 0.8rem; }
-        .exp-text span { font-size: 0.65rem; color: var(--text-secondary); }
         
         .start-btn {
-            padding: 12px 36px;
+            padding: 14px 40px;
             font-family: 'Space Grotesk', sans-serif;
             font-size: 1rem;
-            font-weight: 600;
-            background: linear-gradient(135deg, var(--delta-color), var(--process-color));
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--delta), var(--warning));
             color: white;
             border: none;
             border-radius: 10px;
             cursor: pointer;
+            margin-bottom: 12px;
         }
         
-        .loading { 
-            margin-top: 12px; 
-            color: var(--text-secondary);
+        .start-btn:hover {
+            transform: scale(1.02);
+        }
+        
+        .start-note {
+            color: var(--muted);
+            font-size: 0.65rem;
+            max-width: 350px;
+        }
+        
+        .loading {
+            margin-top: 16px;
+            color: var(--muted);
             font-size: 0.8rem;
         }
         
         .loading.hidden { display: none; }
-        
-        .alert-flash {
-            position: fixed;
-            inset: 0;
-            background: rgba(245, 158, 11, 0.12);
-            pointer-events: none;
-            opacity: 0;
-            z-index: 50;
-            transition: opacity 0.1s;
+
+        /* Speed slider */
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
         
-        .alert-flash.active { opacity: 1; }
+        .speed-slider {
+            flex: 1;
+            -webkit-appearance: none;
+            height: 6px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+            outline: none;
+        }
+        
+        .speed-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--relation);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        .speed-value {
+            width: 30px;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+
+        /* Keyboard hint */
+        .keyboard-hint {
+            position: absolute;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.55rem;
+            color: var(--muted);
+        }
+        
+        .key {
+            display: inline-block;
+            background: rgba(255,255,255,0.1);
+            padding: 2px 6px;
+            border-radius: 3px;
+            margin: 0 2px;
+        }
     </style>
 </head>
 <body>
-    <div class="alert-flash" id="alertFlash"></div>
-    
     <div class="start-overlay" id="startOverlay">
-        <div class="start-title">EAR Meter v3.1</div>
-        <div class="start-subtitle">Motion Tracking con Marker</div>
-        
-        <div class="explanation">
-            <div class="exp-item">
-                <div class="exp-symbol" style="color: var(--delta-color)">Δ</div>
-                <div class="exp-text">
-                    <strong>Stabilità</strong>
-                    <span>Zone ferme, struttura</span>
-                </div>
-            </div>
-            <div class="exp-item">
-                <div class="exp-symbol" style="color: var(--relation-color)">⇄</div>
-                <div class="exp-text">
-                    <strong>Bordo</strong>
-                    <span>Confine movimento/quiete</span>
-                </div>
-            </div>
-            <div class="exp-item">
-                <div class="exp-symbol" style="color: var(--process-color)">⟳</div>
-                <div class="exp-text">
-                    <strong>Movimento</strong>
-                    <span>Zone attive, tracked con marker</span>
-                </div>
-            </div>
+        <div class="start-title">EAR PILOT</div>
+        <div class="start-sub">🧪 SIMULATORE</div>
+        <div class="start-desc">
+            Testa il sistema EAR completo PRIMA di costruire l'hardware.<br>
+            La camera rileva il movimento (Δ ⇄ ⟳) e la macchinina virtuale risponde in tempo reale.
         </div>
-        
-        <button class="start-btn" id="startBtn">Avvia Camera</button>
-        <div class="loading hidden" id="loading">Accesso alla camera...</div>
+        <button class="start-btn" id="startBtn">AVVIA SIMULATORE</button>
+        <div class="start-note">
+            Richiede accesso alla camera.<br>
+            Muovi oggetti davanti alla camera per vedere la macchinina reagire.
+        </div>
+        <div class="loading hidden" id="loading">Accesso camera...</div>
     </div>
     
     <div class="container">
         <div class="header">
-            <div class="logo">EAR <span>v3.1</span></div>
-            <div class="status">
-                <div class="status-dot" id="statusDot"></div>
-                <span id="statusText">In attesa</span>
+            <div class="logo">EAR <span>PILOT</span> <span class="sim">SIMULATORE</span></div>
+            <div class="mode-indicator">
+                <span>●</span> Simulazione Attiva
             </div>
         </div>
         
-        <div class="video-area">
-            <video id="video" playsinline autoplay muted></video>
-            <canvas id="overlayCanvas"></canvas>
-            <div class="video-hud">
-                <div class="hud-item" id="fps">-- fps</div>
-                <div class="hud-item" id="activity">Attività: --</div>
+        <!-- Camera Panel -->
+        <div class="panel">
+            <div class="panel-header">
+                <span>📹 Camera — Visione EAR</span>
+                <span id="fps">-- fps</span>
             </div>
-            <div class="video-bottom">
-                <div class="zones-count">Zone ⟳: <span id="zonesCount">0</span></div>
-                <div class="k-display" id="kDisplay">
-                    <span id="kValue">0.000</span>
-                    <small> K</small>
+            <div class="panel-content">
+                <video id="video" playsinline autoplay muted></video>
+                <canvas id="overlay"></canvas>
+                
+                <div class="zones-overlay">
+                    <div class="zone">
+                        <div class="zone-label">⟳ SX</div>
+                        <div class="zone-bar"><div class="zone-bar-fill" id="zoneBarLeft"></div></div>
+                    </div>
+                    <div class="zone">
+                        <div class="zone-label">⟳ CENTRO</div>
+                        <div class="zone-bar"><div class="zone-bar-fill" id="zoneBarCenter"></div></div>
+                    </div>
+                    <div class="zone">
+                        <div class="zone-label">⟳ DX</div>
+                        <div class="zone-bar"><div class="zone-bar-fill" id="zoneBarRight"></div></div>
+                    </div>
+                </div>
+                
+                <div class="command-display" id="cmdDisplay">—</div>
+                
+                <div class="hud">
+                    <div class="hud-item">K: <span id="kValue">0.000</span></div>
                 </div>
             </div>
         </div>
         
-        <div class="meters">
-            <div class="meter">
-                <div class="meter-header">
-                    <div class="meter-symbol delta">Δ</div>
-                    <div class="meter-value" id="valDelta">0%</div>
-                </div>
-                <div class="meter-bar-bg">
-                    <div class="meter-bar delta" id="barDelta" style="width: 0%"></div>
-                </div>
-                <div class="meter-label">Stabile</div>
+        <!-- Simulator Panel -->
+        <div class="panel">
+            <div class="panel-header">
+                <span>🚗 Simulatore Macchinina</span>
+                <span id="simStatus">In attesa...</span>
             </div>
-            <div class="meter">
-                <div class="meter-header">
-                    <div class="meter-symbol relation">⇄</div>
-                    <div class="meter-value" id="valRelation">0%</div>
+            <div class="panel-content">
+                <canvas id="simCanvas"></canvas>
+                <div class="keyboard-hint">
+                    Manuale: <span class="key">↑</span><span class="key">↓</span><span class="key">←</span><span class="key">→</span> <span class="key">SPACE</span>=stop
                 </div>
-                <div class="meter-bar-bg">
-                    <div class="meter-bar relation" id="barRelation" style="width: 0%"></div>
-                </div>
-                <div class="meter-label">Bordo</div>
-            </div>
-            <div class="meter">
-                <div class="meter-header">
-                    <div class="meter-symbol process">⟳</div>
-                    <div class="meter-value" id="valProcess">0%</div>
-                </div>
-                <div class="meter-bar-bg">
-                    <div class="meter-bar process" id="barProcess" style="width: 0%"></div>
-                </div>
-                <div class="meter-label">Motion</div>
             </div>
         </div>
         
-        <div class="state-row">
-            <div class="state-card">
-                <h4>Stato</h4>
-                <div class="value stable" id="stateVal">--</div>
+        <!-- Controls -->
+        <div class="controls-area">
+            <div class="control-card">
+                <h4>Modalità</h4>
+                <div class="mode-btns">
+                    <button class="mode-btn active" id="modeAuto">AUTO</button>
+                    <button class="mode-btn" id="modeManual">MANUAL</button>
+                </div>
             </div>
-            <div class="state-card">
-                <h4>Dominante</h4>
-                <div class="value" id="dominantVal">--</div>
+            
+            <div class="control-card">
+                <h4>Sterzo</h4>
+                <div class="steering">
+                    <div class="steering-bar">
+                        <div class="steering-center"></div>
+                        <div class="steering-indicator" id="steerIndicator"></div>
+                    </div>
+                    <div class="steering-value" id="steerValue">0°</div>
+                </div>
             </div>
-            <div class="state-card">
-                <h4>Max zona</h4>
-                <div class="value" id="maxZoneVal">--</div>
+            
+            <div class="control-card">
+                <h4>Velocità Sim</h4>
+                <div class="speed-control">
+                    <input type="range" class="speed-slider" id="speedSlider" min="1" max="5" value="3">
+                    <div class="speed-value" id="speedValue">3x</div>
+                </div>
             </div>
-            <div class="state-card">
-                <h4>Transizioni</h4>
-                <div class="value" id="transitionVal">0</div>
+            
+            <div class="control-card">
+                <h4>EAR Totale</h4>
+                <div class="ear-display">
+                    <div class="ear-item">
+                        <div class="ear-symbol delta">Δ</div>
+                        <div class="ear-value" id="earDelta">0%</div>
+                    </div>
+                    <div class="ear-item">
+                        <div class="ear-symbol relation">⇄</div>
+                        <div class="ear-value" id="earRelation">0%</div>
+                    </div>
+                    <div class="ear-item">
+                        <div class="ear-symbol process">⟳</div>
+                        <div class="ear-value" id="earProcess">0%</div>
+                    </div>
+                </div>
             </div>
-        </div>
-        
-        <div class="timeline">
-            <h4>K Timeline (30s)</h4>
-            <canvas id="timelineCanvas"></canvas>
+            
+            <div class="command-log">
+                <h4>📋 Log Comandi (ultimi invii)</h4>
+                <div class="log-entries" id="logEntries">
+                    <div class="log-entry"><span class="time">--:--:--</span> In attesa...</div>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        // ============================================
-        // EAR METER v3.1 - Motion Tracking con Marker
-        // ============================================
-        
+        // ============== CONFIGURAZIONE ==============
         const CONFIG = {
-            K_CRIT: 0.35,
+            PROCESS_WIDTH: 160,
+            PROCESS_HEIGHT: 120,
             MOTION_THRESHOLD: 25,
-            EDGE_RADIUS: 2,
-            UPDATE_INTERVAL: 80,
-            SMOOTHING: 0.25,
-            TIMELINE_DURATION: 30,
-            ANALYSIS_SCALE: 0.2,
-            // Clustering
-            MIN_ZONE_SIZE: 50,          // Pixel minimi per una zona
-            GRID_SIZE: 8,               // Griglia per clustering veloce
-            MAX_ZONES: 10               // Max zone da tracciare
+            OBSTACLE_THRESHOLD: 0.08,
+            CLEAR_THRESHOLD: 0.03,
+            STEER_GAIN: 2.5,
+            SMOOTHING: 0.3,
+            K_CRIT: 0.35
         };
-        
-        // Stato
-        let isRunning = false;
-        let previousFrame = null;
-        let currentEAR = { delta: 0.33, relation: 0.33, process: 0.33 };
-        let lastEAR = { delta: 0.33, relation: 0.33, process: 0.33 };
-        let kHistory = [];
-        let transitionCount = 0;
-        let frameCount = 0;
-        let lastFpsTime = Date.now();
-        let detectedZones = [];
-        
-        // Elementi DOM
+
+        // ============== ELEMENTI DOM ==============
         const el = {
             startOverlay: document.getElementById('startOverlay'),
             startBtn: document.getElementById('startBtn'),
             loading: document.getElementById('loading'),
             video: document.getElementById('video'),
-            overlayCanvas: document.getElementById('overlayCanvas'),
-            statusDot: document.getElementById('statusDot'),
-            statusText: document.getElementById('statusText'),
+            overlay: document.getElementById('overlay'),
+            simCanvas: document.getElementById('simCanvas'),
+            cmdDisplay: document.getElementById('cmdDisplay'),
             fps: document.getElementById('fps'),
-            activity: document.getElementById('activity'),
-            zonesCount: document.getElementById('zonesCount'),
-            kDisplay: document.getElementById('kDisplay'),
             kValue: document.getElementById('kValue'),
-            barDelta: document.getElementById('barDelta'),
-            barRelation: document.getElementById('barRelation'),
-            barProcess: document.getElementById('barProcess'),
-            valDelta: document.getElementById('valDelta'),
-            valRelation: document.getElementById('valRelation'),
-            valProcess: document.getElementById('valProcess'),
-            stateVal: document.getElementById('stateVal'),
-            dominantVal: document.getElementById('dominantVal'),
-            maxZoneVal: document.getElementById('maxZoneVal'),
-            transitionVal: document.getElementById('transitionVal'),
-            timelineCanvas: document.getElementById('timelineCanvas'),
-            alertFlash: document.getElementById('alertFlash')
+            simStatus: document.getElementById('simStatus'),
+            zoneBarLeft: document.getElementById('zoneBarLeft'),
+            zoneBarCenter: document.getElementById('zoneBarCenter'),
+            zoneBarRight: document.getElementById('zoneBarRight'),
+            steerIndicator: document.getElementById('steerIndicator'),
+            steerValue: document.getElementById('steerValue'),
+            speedSlider: document.getElementById('speedSlider'),
+            speedValue: document.getElementById('speedValue'),
+            earDelta: document.getElementById('earDelta'),
+            earRelation: document.getElementById('earRelation'),
+            earProcess: document.getElementById('earProcess'),
+            modeAuto: document.getElementById('modeAuto'),
+            modeManual: document.getElementById('modeManual'),
+            logEntries: document.getElementById('logEntries')
         };
-        
-        // Canvas per elaborazione
-        const processCanvas = document.createElement('canvas');
-        const processCtx = processCanvas.getContext('2d', { willReadFrequently: true });
-        
-        // Avvio
-        el.startBtn.addEventListener('click', startApp);
-        
-        async function startApp() {
-            el.startBtn.style.display = 'none';
-            el.loading.classList.remove('hidden');
+
+        // ============== STATO ==============
+        let isAutoMode = true;
+        let currentCommand = 'S';
+        let currentSteering = 0;
+        let currentEAR = { delta: 0, relation: 0, process: 0 };
+        let zoneMotion = { left: 0, center: 0, right: 0 };
+        let prevFrame = null;
+        let frameCount = 0;
+        let lastFpsTime = performance.now();
+        let simSpeed = 3;
+        let commandLog = [];
+
+        // ============== SIMULATORE MACCHININA ==============
+        const car = {
+            x: 0,
+            y: 0,
+            angle: -Math.PI / 2, // Punta verso l'alto
+            speed: 0,
+            targetSpeed: 0,
+            steering: 0,
+            width: 30,
+            height: 50,
+            trail: []
+        };
+
+        const obstacles = [];
+        let simCtx = null;
+
+        function initSimulator() {
+            const canvas = el.simCanvas;
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            simCtx = canvas.getContext('2d');
             
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { 
-                        facingMode: 'environment',
-                        width: { ideal: 640 },
-                        height: { ideal: 480 }
-                    },
-                    audio: false
+            // Posizione iniziale
+            car.x = canvas.width / 2;
+            car.y = canvas.height - 80;
+            car.trail = [];
+            
+            // Genera ostacoli casuali
+            generateObstacles();
+            
+            // Avvia loop simulatore
+            requestAnimationFrame(updateSimulator);
+        }
+
+        function generateObstacles() {
+            obstacles.length = 0;
+            const canvas = el.simCanvas;
+            
+            // Ostacoli statici (alberi/rocce ai lati)
+            for (let i = 0; i < 8; i++) {
+                const side = Math.random() > 0.5 ? 1 : -1;
+                obstacles.push({
+                    x: canvas.width / 2 + side * (100 + Math.random() * 80),
+                    y: 50 + Math.random() * (canvas.height - 150),
+                    radius: 15 + Math.random() * 15,
+                    type: 'static'
                 });
-                
-                el.video.srcObject = stream;
-                await el.video.play();
-                
-                const w = el.video.videoWidth || 640;
-                const h = el.video.videoHeight || 480;
-                
-                el.overlayCanvas.width = w;
-                el.overlayCanvas.height = h;
-                
-                processCanvas.width = Math.floor(w * CONFIG.ANALYSIS_SCALE);
-                processCanvas.height = Math.floor(h * CONFIG.ANALYSIS_SCALE);
-                
-                el.timelineCanvas.width = el.timelineCanvas.offsetWidth * 2;
-                el.timelineCanvas.height = el.timelineCanvas.offsetHeight * 2;
-                
-                el.startOverlay.classList.add('hidden');
-                el.statusDot.classList.add('active');
-                el.statusText.textContent = 'Attivo';
-                
-                isRunning = true;
-                requestAnimationFrame(analyzeLoop);
-                
-            } catch (err) {
-                console.error(err);
-                el.loading.textContent = 'Errore: ' + err.message;
             }
         }
-        
-        function analyzeLoop() {
-            if (!isRunning) return;
+
+        function updateSimulator() {
+            if (!simCtx) {
+                requestAnimationFrame(updateSimulator);
+                return;
+            }
+
+            const canvas = el.simCanvas;
+            const ctx = simCtx;
             
-            processCtx.drawImage(el.video, 0, 0, processCanvas.width, processCanvas.height);
-            const currentFrame = processCtx.getImageData(0, 0, processCanvas.width, processCanvas.height);
+            // Aggiorna fisica
+            updateCarPhysics();
             
-            if (previousFrame) {
-                const result = analyzeMotion(previousFrame, currentFrame);
+            // Pulisci canvas
+            ctx.fillStyle = '#0d3320'; // Erba
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Disegna strada
+            drawRoad(ctx, canvas);
+            
+            // Disegna scia
+            drawTrail(ctx);
+            
+            // Disegna ostacoli
+            drawObstacles(ctx);
+            
+            // Disegna macchinina
+            drawCar(ctx);
+            
+            // Disegna HUD simulatore
+            drawSimHUD(ctx, canvas);
+            
+            requestAnimationFrame(updateSimulator);
+        }
+
+        function updateCarPhysics() {
+            const speedMultiplier = simSpeed * 0.5;
+            
+            // Mappa comandi a fisica
+            switch (currentCommand) {
+                case 'F':
+                    car.targetSpeed = 3 * speedMultiplier;
+                    break;
+                case 'B':
+                    car.targetSpeed = -2 * speedMultiplier;
+                    break;
+                case 'S':
+                    car.targetSpeed = 0;
+                    break;
+                case 'L':
+                    car.targetSpeed = 2 * speedMultiplier;
+                    car.steering = -0.05 * speedMultiplier;
+                    break;
+                case 'R':
+                    car.targetSpeed = 2 * speedMultiplier;
+                    car.steering = 0.05 * speedMultiplier;
+                    break;
+            }
+            
+            // Sterzo graduale basato su currentSteering
+            if (currentCommand === 'F' || currentCommand === 'B') {
+                car.steering = (currentSteering / 45) * 0.03 * speedMultiplier;
+            }
+            
+            // Smoothing velocità
+            car.speed += (car.targetSpeed - car.speed) * 0.1;
+            
+            // Aggiorna posizione
+            car.angle += car.steering * car.speed * 0.5;
+            car.x += Math.cos(car.angle) * car.speed;
+            car.y += Math.sin(car.angle) * car.speed;
+            
+            // Attrito sterzo
+            car.steering *= 0.9;
+            
+            // Limiti canvas (wrap around)
+            const canvas = el.simCanvas;
+            if (car.y < -50) {
+                car.y = canvas.height + 50;
+                car.trail = [];
+                generateObstacles();
+            }
+            if (car.y > canvas.height + 50) {
+                car.y = -50;
+                car.trail = [];
+            }
+            if (car.x < 20) car.x = 20;
+            if (car.x > canvas.width - 20) car.x = canvas.width - 20;
+            
+            // Aggiungi alla scia
+            if (Math.abs(car.speed) > 0.5) {
+                car.trail.push({ x: car.x, y: car.y });
+                if (car.trail.length > 100) car.trail.shift();
+            }
+        }
+
+        function drawRoad(ctx, canvas) {
+            const roadWidth = 140;
+            const centerX = canvas.width / 2;
+            
+            // Strada principale
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(centerX - roadWidth / 2, 0, roadWidth, canvas.height);
+            
+            // Linee laterali
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([]);
+            ctx.beginPath();
+            ctx.moveTo(centerX - roadWidth / 2, 0);
+            ctx.lineTo(centerX - roadWidth / 2, canvas.height);
+            ctx.moveTo(centerX + roadWidth / 2, 0);
+            ctx.lineTo(centerX + roadWidth / 2, canvas.height);
+            ctx.stroke();
+            
+            // Linea centrale tratteggiata
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([20, 20]);
+            ctx.beginPath();
+            ctx.moveTo(centerX, 0);
+            ctx.lineTo(centerX, canvas.height);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        function drawTrail(ctx) {
+            if (car.trail.length < 2) return;
+            
+            ctx.strokeStyle = 'rgba(59, 130, 246, 0.3)';
+            ctx.lineWidth = 8;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(car.trail[0].x, car.trail[0].y);
+            for (let i = 1; i < car.trail.length; i++) {
+                ctx.lineTo(car.trail[i].x, car.trail[i].y);
+            }
+            ctx.stroke();
+        }
+
+        function drawObstacles(ctx) {
+            obstacles.forEach(obs => {
+                // Ombra
+                ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                ctx.beginPath();
+                ctx.arc(obs.x + 3, obs.y + 3, obs.radius, 0, Math.PI * 2);
+                ctx.fill();
                 
-                currentEAR.delta = lerp(currentEAR.delta, result.ear.delta, CONFIG.SMOOTHING);
-                currentEAR.relation = lerp(currentEAR.relation, result.ear.relation, CONFIG.SMOOTHING);
-                currentEAR.process = lerp(currentEAR.process, result.ear.process, CONFIG.SMOOTHING);
+                // Ostacolo
+                ctx.fillStyle = obs.type === 'static' ? '#2d5a27' : '#ef4444';
+                ctx.beginPath();
+                ctx.arc(obs.x, obs.y, obs.radius, 0, Math.PI * 2);
+                ctx.fill();
                 
-                detectedZones = result.zones;
+                // Highlight
+                ctx.fillStyle = 'rgba(255,255,255,0.2)';
+                ctx.beginPath();
+                ctx.arc(obs.x - obs.radius * 0.3, obs.y - obs.radius * 0.3, obs.radius * 0.4, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        function drawCar(ctx) {
+            ctx.save();
+            ctx.translate(car.x, car.y);
+            ctx.rotate(car.angle + Math.PI / 2);
+            
+            // Ombra
+            ctx.fillStyle = 'rgba(0,0,0,0.4)';
+            ctx.fillRect(-car.width / 2 + 4, -car.height / 2 + 4, car.width, car.height);
+            
+            // Corpo
+            ctx.fillStyle = '#3b82f6';
+            ctx.fillRect(-car.width / 2, -car.height / 2, car.width, car.height);
+            
+            // Tetto
+            ctx.fillStyle = '#1e40af';
+            ctx.fillRect(-car.width / 2 + 5, -car.height / 2 + 10, car.width - 10, car.height - 25);
+            
+            // Parabrezza
+            ctx.fillStyle = '#60a5fa';
+            ctx.fillRect(-car.width / 2 + 7, -car.height / 2 + 5, car.width - 14, 8);
+            
+            // Fari posteriori
+            ctx.fillStyle = '#ef4444';
+            ctx.fillRect(-car.width / 2 + 3, car.height / 2 - 8, 8, 5);
+            ctx.fillRect(car.width / 2 - 11, car.height / 2 - 8, 8, 5);
+            
+            // Fari anteriori (accesi se in movimento)
+            if (Math.abs(car.speed) > 0.5) {
+                ctx.fillStyle = '#fef08a';
+                ctx.shadowColor = '#fef08a';
+                ctx.shadowBlur = 15;
+            } else {
+                ctx.fillStyle = '#fde047';
+                ctx.shadowBlur = 0;
+            }
+            ctx.fillRect(-car.width / 2 + 3, -car.height / 2, 8, 5);
+            ctx.fillRect(car.width / 2 - 11, -car.height / 2, 8, 5);
+            ctx.shadowBlur = 0;
+            
+            // Ruote
+            ctx.fillStyle = '#1f2937';
+            ctx.fillRect(-car.width / 2 - 3, -car.height / 2 + 5, 6, 12);
+            ctx.fillRect(car.width / 2 - 3, -car.height / 2 + 5, 6, 12);
+            ctx.fillRect(-car.width / 2 - 3, car.height / 2 - 17, 6, 12);
+            ctx.fillRect(car.width / 2 - 3, car.height / 2 - 17, 6, 12);
+            
+            ctx.restore();
+        }
+
+        function drawSimHUD(ctx, canvas) {
+            // Stato simulatore
+            const cmdColors = { F: '#10b981', B: '#f59e0b', L: '#3b82f6', R: '#3b82f6', S: '#ef4444' };
+            const cmdNames = { F: 'AVANTI', B: 'INDIETRO', L: 'SINISTRA', R: 'DESTRA', S: 'STOP' };
+            
+            ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            ctx.fillRect(10, 10, 120, 60);
+            
+            ctx.fillStyle = cmdColors[currentCommand] || '#888';
+            ctx.font = 'bold 14px "Space Grotesk", sans-serif';
+            ctx.fillText(cmdNames[currentCommand] || '—', 20, 32);
+            
+            ctx.fillStyle = '#888';
+            ctx.font = '11px "JetBrains Mono", monospace';
+            ctx.fillText(`Vel: ${car.speed.toFixed(1)}`, 20, 50);
+            ctx.fillText(`Ang: ${(car.steering * 100).toFixed(0)}°`, 70, 50);
+            
+            // Indicatore EAR
+            ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            ctx.fillRect(canvas.width - 90, 10, 80, 25);
+            ctx.fillStyle = '#3b82f6';
+            ctx.font = '12px "JetBrains Mono", monospace';
+            ctx.fillText('Δ⇄⟳', canvas.width - 75, 28);
+        }
+
+        // ============== PROCESSING VIDEO ==============
+        const processCanvas = document.createElement('canvas');
+        processCanvas.width = CONFIG.PROCESS_WIDTH;
+        processCanvas.height = CONFIG.PROCESS_HEIGHT;
+        const processCtx = processCanvas.getContext('2d', { willReadFrequently: true });
+
+        function processFrame() {
+            if (!el.video.videoWidth) {
+                requestAnimationFrame(processFrame);
+                return;
+            }
+
+            // Resize overlay
+            if (el.overlay.width !== el.video.videoWidth) {
+                el.overlay.width = el.video.videoWidth;
+                el.overlay.height = el.video.videoHeight;
+            }
+
+            // Disegna frame ridotto
+            processCtx.drawImage(el.video, 0, 0, CONFIG.PROCESS_WIDTH, CONFIG.PROCESS_HEIGHT);
+            const currentFrame = processCtx.getImageData(0, 0, CONFIG.PROCESS_WIDTH, CONFIG.PROCESS_HEIGHT);
+
+            if (prevFrame) {
+                // Analisi EAR
+                const analysis = analyzeEAR(prevFrame, currentFrame);
                 
-                const k = calculateK(lastEAR, currentEAR);
+                // Smoothing
+                currentEAR.delta = lerp(currentEAR.delta, analysis.total.delta, CONFIG.SMOOTHING);
+                currentEAR.relation = lerp(currentEAR.relation, analysis.total.relation, CONFIG.SMOOTHING);
+                currentEAR.process = lerp(currentEAR.process, analysis.total.process, CONFIG.SMOOTHING);
                 
-                kHistory.push({ time: Date.now(), k });
-                const cutoff = Date.now() - CONFIG.TIMELINE_DURATION * 1000;
-                kHistory = kHistory.filter(h => h.time > cutoff);
-                
-                if (k > CONFIG.K_CRIT) {
-                    transitionCount++;
-                    triggerAlert();
+                zoneMotion.left = lerp(zoneMotion.left, analysis.zones.left, CONFIG.SMOOTHING);
+                zoneMotion.center = lerp(zoneMotion.center, analysis.zones.center, CONFIG.SMOOTHING);
+                zoneMotion.right = lerp(zoneMotion.right, analysis.zones.right, CONFIG.SMOOTHING);
+
+                // Calcola K
+                const k = calculateK(
+                    { delta: currentEAR.delta, relation: currentEAR.relation, process: currentEAR.process },
+                    analysis.total
+                );
+
+                // Decisione di guida (solo in AUTO)
+                if (isAutoMode) {
+                    const drive = computeDriveCommand();
+                    if (drive.command !== currentCommand) {
+                        logCommand(drive.command);
+                    }
+                    currentCommand = drive.command;
+                    currentSteering = drive.steering;
                 }
-                
+
+                // Disegna overlay
+                drawOverlay(analysis.motionMap);
+
+                // Aggiorna UI
                 updateUI(k);
-                drawOverlay(result.motionMap);
-                
-                lastEAR = { ...currentEAR };
-            }
-            
-            previousFrame = currentFrame;
-            
-            frameCount++;
-            if (Date.now() - lastFpsTime > 1000) {
-                el.fps.textContent = frameCount + ' fps';
-                frameCount = 0;
-                lastFpsTime = Date.now();
-            }
-            
-            setTimeout(() => requestAnimationFrame(analyzeLoop), CONFIG.UPDATE_INTERVAL);
-        }
-        
-        function analyzeMotion(prev, curr) {
-            const w = prev.width;
-            const h = prev.height;
-            const total = w * h;
-            
-            const motionMap = new Uint8Array(total);
-            const motionIntensity = new Float32Array(total);
-            
-            let deltaCount = 0;
-            let processCount = 0;
-            
-            // Pass 1: Detect motion
-            for (let i = 0; i < total; i++) {
-                const idx = i * 4;
-                const prevLum = prev.data[idx] * 0.299 + prev.data[idx+1] * 0.587 + prev.data[idx+2] * 0.114;
-                const currLum = curr.data[idx] * 0.299 + curr.data[idx+1] * 0.587 + curr.data[idx+2] * 0.114;
-                const diff = Math.abs(currLum - prevLum);
-                
-                motionIntensity[i] = diff;
-                
-                if (diff > CONFIG.MOTION_THRESHOLD) {
-                    motionMap[i] = 1;
-                    processCount++;
-                } else {
-                    motionMap[i] = 0;
-                    deltaCount++;
+
+                // FPS
+                frameCount++;
+                const now = performance.now();
+                if (now - lastFpsTime > 1000) {
+                    el.fps.textContent = frameCount + ' fps';
+                    frameCount = 0;
+                    lastFpsTime = now;
                 }
             }
-            
-            // Pass 2: Find edges
+
+            prevFrame = currentFrame;
+            requestAnimationFrame(processFrame);
+        }
+
+        function analyzeEAR(prev, curr) {
+            const w = CONFIG.PROCESS_WIDTH;
+            const h = CONFIG.PROCESS_HEIGHT;
+            const total = w * h;
+            const zoneWidth = w / 3;
+
+            let deltaCount = 0;
             let relationCount = 0;
-            const r = CONFIG.EDGE_RADIUS;
-            
-            for (let y = r; y < h - r; y++) {
-                for (let x = r; x < w - r; x++) {
+            let processCount = 0;
+
+            const zoneCounts = { left: 0, center: 0, right: 0 };
+            const zonePixels = { left: 0, center: 0, right: 0 };
+            const motionMap = new Uint8Array(total);
+
+            // Pass 1: Motion detection
+            for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) {
+                    const i = y * w + x;
+                    const idx = i * 4;
+
+                    const prevLum = prev.data[idx] * 0.299 + prev.data[idx + 1] * 0.587 + prev.data[idx + 2] * 0.114;
+                    const currLum = curr.data[idx] * 0.299 + curr.data[idx + 1] * 0.587 + curr.data[idx + 2] * 0.114;
+                    const diff = Math.abs(currLum - prevLum);
+
+                    let zone;
+                    if (x < zoneWidth) zone = 'left';
+                    else if (x < zoneWidth * 2) zone = 'center';
+                    else zone = 'right';
+
+                    zonePixels[zone]++;
+
+                    if (diff > CONFIG.MOTION_THRESHOLD) {
+                        motionMap[i] = 1;
+                        processCount++;
+                        zoneCounts[zone]++;
+                    } else {
+                        motionMap[i] = 0;
+                        deltaCount++;
+                    }
+                }
+            }
+
+            // Pass 2: Edge detection
+            for (let y = 1; y < h - 1; y++) {
+                for (let x = 1; x < w - 1; x++) {
                     const i = y * w + x;
                     if (motionMap[i] === 0) {
-                        let hasMovingNeighbor = false;
-                        for (let dy = -r; dy <= r && !hasMovingNeighbor; dy++) {
-                            for (let dx = -r; dx <= r && !hasMovingNeighbor; dx++) {
-                                if (dx === 0 && dy === 0) continue;
-                                if (motionMap[(y + dy) * w + (x + dx)] === 1) {
-                                    hasMovingNeighbor = true;
-                                }
-                            }
-                        }
-                        if (hasMovingNeighbor) {
+                        if (motionMap[i - 1] === 1 || motionMap[i + 1] === 1 ||
+                            motionMap[i - w] === 1 || motionMap[i + w] === 1) {
                             motionMap[i] = 2;
                             relationCount++;
                             deltaCount--;
@@ -676,355 +1073,208 @@
                     }
                 }
             }
-            
-            // Pass 3: Find motion zones using grid-based clustering
-            const zones = findMotionZones(motionMap, motionIntensity, w, h);
-            
+
             return {
-                ear: {
+                total: {
                     delta: deltaCount / total,
                     relation: relationCount / total,
                     process: processCount / total
                 },
-                motionMap: motionMap,
-                zones: zones
+                zones: {
+                    left: zoneCounts.left / zonePixels.left,
+                    center: zoneCounts.center / zonePixels.center,
+                    right: zoneCounts.right / zonePixels.right
+                },
+                motionMap
             };
         }
-        
-        function findMotionZones(motionMap, intensity, w, h) {
-            const gridW = Math.ceil(w / CONFIG.GRID_SIZE);
-            const gridH = Math.ceil(h / CONFIG.GRID_SIZE);
-            const grid = new Float32Array(gridW * gridH);
-            
-            // Accumula movimento per cella
-            for (let y = 0; y < h; y++) {
-                for (let x = 0; x < w; x++) {
-                    if (motionMap[y * w + x] === 1) {
-                        const gx = Math.floor(x / CONFIG.GRID_SIZE);
-                        const gy = Math.floor(y / CONFIG.GRID_SIZE);
-                        grid[gy * gridW + gx] += intensity[y * w + x];
-                    }
-                }
+
+        function computeDriveCommand() {
+            const L = zoneMotion.left;
+            const C = zoneMotion.center;
+            const R = zoneMotion.right;
+
+            let command = 'F';
+            let steering = 0;
+
+            if (C > CONFIG.OBSTACLE_THRESHOLD * 1.5) {
+                command = 'S';
+                steering = 0;
+            } else if (R > CONFIG.OBSTACLE_THRESHOLD && R > L * 1.5) {
+                command = 'L';
+                steering = -Math.min((R - L) * CONFIG.STEER_GAIN * 100, 45);
+            } else if (L > CONFIG.OBSTACLE_THRESHOLD && L > R * 1.5) {
+                command = 'R';
+                steering = Math.min((L - R) * CONFIG.STEER_GAIN * 100, 45);
+            } else if (C < CONFIG.CLEAR_THRESHOLD && L < CONFIG.OBSTACLE_THRESHOLD && R < CONFIG.OBSTACLE_THRESHOLD) {
+                command = 'F';
+                steering = (R - L) * CONFIG.STEER_GAIN * 30;
+            } else {
+                command = 'F';
+                steering = (R - L) * CONFIG.STEER_GAIN * 50;
             }
-            
-            // Trova celle con molto movimento
-            const hotCells = [];
-            for (let gy = 0; gy < gridH; gy++) {
-                for (let gx = 0; gx < gridW; gx++) {
-                    const val = grid[gy * gridW + gx];
-                    if (val > CONFIG.MIN_ZONE_SIZE * CONFIG.MOTION_THRESHOLD) {
-                        hotCells.push({ gx, gy, val });
-                    }
-                }
-            }
-            
-            // Clustering semplice: unisci celle adiacenti
-            const zones = [];
-            const visited = new Set();
-            
-            for (const cell of hotCells) {
-                const key = `${cell.gx},${cell.gy}`;
-                if (visited.has(key)) continue;
-                
-                // BFS per trovare cluster
-                const cluster = [];
-                const queue = [cell];
-                let totalVal = 0;
-                let minX = cell.gx, maxX = cell.gx;
-                let minY = cell.gy, maxY = cell.gy;
-                
-                while (queue.length > 0) {
-                    const c = queue.shift();
-                    const k = `${c.gx},${c.gy}`;
-                    if (visited.has(k)) continue;
-                    visited.add(k);
-                    
-                    cluster.push(c);
-                    totalVal += c.val;
-                    minX = Math.min(minX, c.gx);
-                    maxX = Math.max(maxX, c.gx);
-                    minY = Math.min(minY, c.gy);
-                    maxY = Math.max(maxY, c.gy);
-                    
-                    // Check neighbors
-                    for (const neighbor of hotCells) {
-                        const nk = `${neighbor.gx},${neighbor.gy}`;
-                        if (!visited.has(nk)) {
-                            const dx = Math.abs(neighbor.gx - c.gx);
-                            const dy = Math.abs(neighbor.gy - c.gy);
-                            if (dx <= 1 && dy <= 1) {
-                                queue.push(neighbor);
-                            }
-                        }
-                    }
-                }
-                
-                if (cluster.length > 0) {
-                    // Converti coordinate griglia in pixel (scala analisi)
-                    const scale = 1 / CONFIG.ANALYSIS_SCALE;
-                    zones.push({
-                        x: minX * CONFIG.GRID_SIZE * scale,
-                        y: minY * CONFIG.GRID_SIZE * scale,
-                        w: (maxX - minX + 1) * CONFIG.GRID_SIZE * scale,
-                        h: (maxY - minY + 1) * CONFIG.GRID_SIZE * scale,
-                        intensity: totalVal / cluster.length,
-                        cells: cluster.length
-                    });
-                }
-            }
-            
-            // Ordina per intensità e limita
-            zones.sort((a, b) => b.intensity - a.intensity);
-            return zones.slice(0, CONFIG.MAX_ZONES);
+
+            return { command, steering: Math.round(steering) };
         }
-        
+
         function drawOverlay(motionMap) {
-            const ctx = el.overlayCanvas.getContext('2d');
-            const cw = el.overlayCanvas.width;
-            const ch = el.overlayCanvas.height;
-            const w = processCanvas.width;
-            const h = processCanvas.height;
-            
+            const ctx = el.overlay.getContext('2d');
+            const w = CONFIG.PROCESS_WIDTH;
+            const h = CONFIG.PROCESS_HEIGHT;
+            const cw = el.overlay.width;
+            const ch = el.overlay.height;
+
             ctx.clearRect(0, 0, cw, ch);
-            
-            // Disegna motion map semi-trasparente
+
             const tempCanvas = document.createElement('canvas');
             tempCanvas.width = w;
             tempCanvas.height = h;
             const tempCtx = tempCanvas.getContext('2d');
-            const imageData = tempCtx.createImageData(w, h);
-            
+            const imgData = tempCtx.createImageData(w, h);
+
             for (let i = 0; i < motionMap.length; i++) {
                 const idx = i * 4;
-                const type = motionMap[i];
-                
-                if (type === 0) {
-                    // Delta - quasi invisibile
-                    imageData.data[idx + 3] = 0;
-                } else if (type === 1) {
-                    // Process - rosso
-                    imageData.data[idx] = 239;
-                    imageData.data[idx + 1] = 68;
-                    imageData.data[idx + 2] = 68;
-                    imageData.data[idx + 3] = 100;
-                } else {
-                    // Relation - verde
-                    imageData.data[idx] = 16;
-                    imageData.data[idx + 1] = 185;
-                    imageData.data[idx + 2] = 129;
-                    imageData.data[idx + 3] = 120;
+                if (motionMap[i] === 1) {
+                    imgData.data[idx] = 239;
+                    imgData.data[idx + 1] = 68;
+                    imgData.data[idx + 2] = 68;
+                    imgData.data[idx + 3] = 80;
+                } else if (motionMap[i] === 2) {
+                    imgData.data[idx] = 16;
+                    imgData.data[idx + 1] = 185;
+                    imgData.data[idx + 2] = 129;
+                    imgData.data[idx + 3] = 100;
                 }
             }
-            
-            tempCtx.putImageData(imageData, 0, 0);
+
+            tempCtx.putImageData(imgData, 0, 0);
             ctx.drawImage(tempCanvas, 0, 0, cw, ch);
-            
-            // Disegna marker per ogni zona
-            ctx.lineWidth = 2;
-            ctx.font = 'bold 12px JetBrains Mono';
-            
-            detectedZones.forEach((zone, idx) => {
-                // Colore basato su intensità
-                const intensity = Math.min(zone.intensity / 5000, 1);
-                const r = Math.round(239 + (255 - 239) * intensity);
-                const g = Math.round(68 * (1 - intensity));
-                const b = Math.round(68 * (1 - intensity));
-                
-                // Box
-                ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.9)`;
-                ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.15)`;
-                
-                ctx.beginPath();
-                ctx.roundRect(zone.x, zone.y, zone.w, zone.h, 6);
-                ctx.fill();
-                ctx.stroke();
-                
-                // Centro marker
-                const cx = zone.x + zone.w / 2;
-                const cy = zone.y + zone.h / 2;
-                
-                // Crosshair
-                ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.8)`;
-                ctx.beginPath();
-                ctx.moveTo(cx - 10, cy);
-                ctx.lineTo(cx + 10, cy);
-                ctx.moveTo(cx, cy - 10);
-                ctx.lineTo(cx, cy + 10);
-                ctx.stroke();
-                
-                // Label
-                const label = `⟳${idx + 1}`;
-                ctx.fillStyle = `rgba(0, 0, 0, 0.7)`;
-                ctx.fillRect(zone.x, zone.y - 18, 32, 16);
-                ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
-                ctx.fillText(label, zone.x + 4, zone.y - 5);
-                
-                // Intensità
-                const pct = Math.round(intensity * 100);
-                ctx.fillStyle = 'rgba(0,0,0,0.6)';
-                ctx.fillRect(zone.x + zone.w - 30, zone.y - 18, 30, 16);
-                ctx.fillStyle = '#fff';
-                ctx.fillText(pct + '%', zone.x + zone.w - 26, zone.y - 5);
-            });
-            
-            // Se nessuna zona, mostra messaggio
-            if (detectedZones.length === 0 && currentEAR.process < 0.02) {
-                ctx.fillStyle = 'rgba(59, 130, 246, 0.3)';
-                ctx.font = 'bold 16px Space Grotesk';
-                ctx.textAlign = 'center';
-                ctx.fillText('Δ STABILE — Nessun movimento', cw / 2, ch / 2);
-                ctx.textAlign = 'left';
-            }
         }
-        
+
+        function updateUI(k) {
+            // Zone bars
+            el.zoneBarLeft.style.width = (zoneMotion.left * 100 / 0.3) + '%';
+            el.zoneBarCenter.style.width = (zoneMotion.center * 100 / 0.3) + '%';
+            el.zoneBarRight.style.width = (zoneMotion.right * 100 / 0.3) + '%';
+
+            // K value
+            el.kValue.textContent = k.toFixed(3);
+
+            // Command display
+            const cmdSymbols = { F: '↑', B: '↓', L: '←', R: '→', S: '■' };
+            const cmdClasses = { F: 'cmd-forward', B: 'cmd-back', L: 'cmd-left', R: 'cmd-right', S: 'cmd-stop' };
+            el.cmdDisplay.textContent = cmdSymbols[currentCommand] || '—';
+            el.cmdDisplay.className = 'command-display ' + (cmdClasses[currentCommand] || '');
+
+            // Steering
+            const steerPct = 50 + (currentSteering / 90 * 50);
+            el.steerIndicator.style.left = `calc(${steerPct}% - 8px)`;
+            el.steerValue.textContent = currentSteering + '°';
+
+            // EAR totale
+            el.earDelta.textContent = Math.round(currentEAR.delta * 100) + '%';
+            el.earRelation.textContent = Math.round(currentEAR.relation * 100) + '%';
+            el.earProcess.textContent = Math.round(currentEAR.process * 100) + '%';
+
+            // Sim status
+            const statusTexts = { F: 'Avanti', B: 'Indietro', L: 'Sterza SX', R: 'Sterza DX', S: 'Fermo' };
+            el.simStatus.textContent = statusTexts[currentCommand] || '...';
+        }
+
         function calculateK(prev, curr) {
             const dD = curr.delta - prev.delta;
             const dR = curr.relation - prev.relation;
             const dP = curr.process - prev.process;
-            return Math.sqrt(dD*dD + dR*dR + dP*dP);
+            return Math.sqrt(dD * dD + dR * dR + dP * dP);
         }
-        
-        function updateUI(k) {
-            // Barre
-            el.barDelta.style.width = (currentEAR.delta * 100) + '%';
-            el.barRelation.style.width = (currentEAR.relation * 100) + '%';
-            el.barProcess.style.width = (currentEAR.process * 100) + '%';
-            
-            // Valori
-            el.valDelta.textContent = Math.round(currentEAR.delta * 100) + '%';
-            el.valRelation.textContent = Math.round(currentEAR.relation * 100) + '%';
-            el.valProcess.textContent = Math.round(currentEAR.process * 100) + '%';
-            
-            // K
-            el.kValue.textContent = k.toFixed(3);
-            el.kDisplay.classList.toggle('alert', k > CONFIG.K_CRIT);
-            
-            // Zone count
-            el.zonesCount.textContent = detectedZones.length;
-            
-            // Stato
-            if (k > CONFIG.K_CRIT) {
-                el.stateVal.textContent = 'TRANS';
-                el.stateVal.className = 'value alert';
-            } else if (k > CONFIG.K_CRIT * 0.5) {
-                el.stateVal.textContent = 'VAR';
-                el.stateVal.className = 'value warning';
-            } else {
-                el.stateVal.textContent = 'STAB';
-                el.stateVal.className = 'value stable';
-            }
-            
-            // Dominante
-            const max = Math.max(currentEAR.delta, currentEAR.relation, currentEAR.process);
-            if (max === currentEAR.delta) {
-                el.dominantVal.textContent = 'Δ';
-                el.dominantVal.style.color = 'var(--delta-color)';
-            } else if (max === currentEAR.relation) {
-                el.dominantVal.textContent = '⇄';
-                el.dominantVal.style.color = 'var(--relation-color)';
-            } else {
-                el.dominantVal.textContent = '⟳';
-                el.dominantVal.style.color = 'var(--process-color)';
-            }
-            
-            // Max zona
-            if (detectedZones.length > 0) {
-                const maxZone = detectedZones[0];
-                const size = Math.round((maxZone.w * maxZone.h) / (el.overlayCanvas.width * el.overlayCanvas.height) * 100);
-                el.maxZoneVal.textContent = size + '%';
-                el.maxZoneVal.style.color = 'var(--process-color)';
-            } else {
-                el.maxZoneVal.textContent = '--';
-                el.maxZoneVal.style.color = 'var(--text-secondary)';
-            }
-            
-            // Attività HUD
-            const act = currentEAR.process;
-            let actText, actColor;
-            if (act < 0.03) {
-                actText = 'QUIETE';
-                actColor = 'var(--delta-color)';
-            } else if (act < 0.12) {
-                actText = 'BASSA';
-                actColor = 'var(--relation-color)';
-            } else if (act < 0.30) {
-                actText = 'MEDIA';
-                actColor = 'var(--alert-color)';
-            } else {
-                actText = 'ALTA';
-                actColor = 'var(--process-color)';
-            }
-            el.activity.innerHTML = `Attività: <span style="color:${actColor};font-weight:bold">${actText}</span>`;
-            
-            // Transizioni
-            el.transitionVal.textContent = transitionCount;
-            
-            drawTimeline();
+
+        function lerp(a, b, t) {
+            return a + (b - a) * t;
         }
-        
-        function drawTimeline() {
-            const canvas = el.timelineCanvas;
-            const ctx = canvas.getContext('2d');
-            const w = canvas.width;
-            const h = canvas.height;
+
+        function logCommand(cmd) {
+            const now = new Date();
+            const time = now.toTimeString().split(' ')[0];
+            const cmdNames = { F: 'FORWARD', B: 'BACKWARD', L: 'LEFT', R: 'RIGHT', S: 'STOP' };
             
-            ctx.fillStyle = 'rgba(255,255,255,0.015)';
-            ctx.fillRect(0, 0, w, h);
+            commandLog.unshift({ time, cmd: cmdNames[cmd] || cmd });
+            if (commandLog.length > 10) commandLog.pop();
             
-            if (kHistory.length < 2) return;
-            
-            const now = Date.now();
-            const duration = CONFIG.TIMELINE_DURATION * 1000;
-            
-            // K_crit line
-            const critY = h - (CONFIG.K_CRIT / 0.5) * h;
-            ctx.strokeStyle = 'rgba(245, 158, 11, 0.35)';
-            ctx.lineWidth = 1;
-            ctx.setLineDash([3, 3]);
-            ctx.beginPath();
-            ctx.moveTo(0, critY);
-            ctx.lineTo(w, critY);
-            ctx.stroke();
-            ctx.setLineDash([]);
-            
-            // K curve
-            ctx.strokeStyle = 'rgba(255,255,255,0.6)';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            
-            let started = false;
-            for (const p of kHistory) {
-                const x = ((p.time - (now - duration)) / duration) * w;
-                const y = h - Math.min(p.k / 0.5, 1) * h;
-                if (!started) { ctx.moveTo(x, y); started = true; }
-                else ctx.lineTo(x, y);
+            el.logEntries.innerHTML = commandLog.map(entry => 
+                `<div class="log-entry"><span class="time">${entry.time}</span> → <span class="cmd">${entry.cmd}</span></div>`
+            ).join('');
+        }
+
+        // ============== EVENT HANDLERS ==============
+        el.startBtn.addEventListener('click', async () => {
+            el.startBtn.disabled = true;
+            el.loading.classList.remove('hidden');
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment', width: 640, height: 480 }
+                });
+                el.video.srcObject = stream;
+                await el.video.play();
+
+                el.startOverlay.classList.add('hidden');
+                initSimulator();
+                processFrame();
+            } catch (err) {
+                el.loading.textContent = 'Errore: ' + err.message;
             }
-            ctx.stroke();
-            
-            // Alert points
-            ctx.fillStyle = 'var(--process-color)';
-            for (const p of kHistory) {
-                if (p.k > CONFIG.K_CRIT) {
-                    const x = ((p.time - (now - duration)) / duration) * w;
-                    const y = h - Math.min(p.k / 0.5, 1) * h;
-                    ctx.beginPath();
-                    ctx.arc(x, y, 3, 0, Math.PI * 2);
-                    ctx.fill();
+        });
+
+        el.modeAuto.addEventListener('click', () => {
+            isAutoMode = true;
+            el.modeAuto.classList.add('active');
+            el.modeManual.classList.remove('active');
+        });
+
+        el.modeManual.addEventListener('click', () => {
+            isAutoMode = false;
+            el.modeManual.classList.add('active');
+            el.modeAuto.classList.remove('active');
+            currentCommand = 'S';
+        });
+
+        el.speedSlider.addEventListener('input', () => {
+            simSpeed = parseInt(el.speedSlider.value);
+            el.speedValue.textContent = simSpeed + 'x';
+        });
+
+        // Keyboard controls (manual mode)
+        document.addEventListener('keydown', (e) => {
+            if (!isAutoMode) {
+                const keyMap = { ArrowUp: 'F', ArrowDown: 'B', ArrowLeft: 'L', ArrowRight: 'R', Space: 'S' };
+                const cmd = keyMap[e.code];
+                if (cmd) {
+                    e.preventDefault();
+                    if (cmd !== currentCommand) logCommand(cmd);
+                    currentCommand = cmd;
+                    currentSteering = cmd === 'L' ? -30 : cmd === 'R' ? 30 : 0;
                 }
             }
-        }
-        
-        function triggerAlert() {
-            if (navigator.vibrate) navigator.vibrate([60, 30, 60]);
-            el.alertFlash.classList.add('active');
-            setTimeout(() => el.alertFlash.classList.remove('active'), 120);
-        }
-        
-        function lerp(a, b, t) { return a + (b - a) * t; }
-        
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (!isAutoMode) {
+                const keys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'];
+                if (keys.includes(e.code)) {
+                    currentCommand = 'S';
+                    currentSteering = 0;
+                }
+            }
+        });
+
+        // Resize handler
         window.addEventListener('resize', () => {
-            el.timelineCanvas.width = el.timelineCanvas.offsetWidth * 2;
-            el.timelineCanvas.height = el.timelineCanvas.offsetHeight * 2;
+            if (simCtx) {
+                const canvas = el.simCanvas;
+                const rect = canvas.parentElement.getBoundingClientRect();
+                canvas.width = rect.width;
+                canvas.height = rect.height;
+            }
         });
     </script>
 </body>
