@@ -546,6 +546,10 @@
                 <div class="state-value" id="dominantValue">--</div>
             </div>
             <div class="state-card">
+                <h3>Copertura</h3>
+                <div class="state-value" id="coverageValue" style="font-size: 0.9rem;">--%</div>
+            </div>
+            <div class="state-card">
                 <h3>Transizioni</h3>
                 <div class="state-value" id="transitionCount">0</div>
             </div>
@@ -640,6 +644,7 @@
             valueProcess: document.getElementById('valueProcess'),
             stateValue: document.getElementById('stateValue'),
             dominantValue: document.getElementById('dominantValue'),
+            coverageValue: document.getElementById('coverageValue'),
             transitionCount: document.getElementById('transitionCount'),
             timelineCanvas: document.getElementById('timeline-canvas'),
             alertFlash: document.getElementById('alertFlash')
@@ -714,6 +719,7 @@
                 currentEAR.delta = lerp(currentEAR.delta, earDistribution.delta, CONFIG.SMOOTHING);
                 currentEAR.relation = lerp(currentEAR.relation, earDistribution.relation, CONFIG.SMOOTHING);
                 currentEAR.process = lerp(currentEAR.process, earDistribution.process, CONFIG.SMOOTHING);
+                currentEAR.coverage = earDistribution.coverage; // Passa copertura senza smoothing
                 
                 // Calcola K (transizione)
                 const k = calculateK(lastEAR, currentEAR);
@@ -761,18 +767,37 @@
         function analyzeSegmentation(segmentation) {
             const data = segmentation.segmentationMap;
             const counts = { delta: 0, relation: 0, process: 0 };
+            let recognizedPixels = 0;
             
             for (let i = 0; i < data.length; i++) {
                 const classId = data[i];
-                const earType = CLASS_TO_EAR[classId] || 'relation';
-                counts[earType]++;
+                // Escludi background (class 0) dalla misurazione
+                if (classId > 0) {
+                    const earType = CLASS_TO_EAR[classId];
+                    counts[earType]++;
+                    recognizedPixels++;
+                }
             }
             
-            const total = data.length;
+            // Calcola percentuale di scena riconosciuta
+            const coverage = recognizedPixels / data.length;
+            
+            // Se meno del 1% è riconosciuto, usa distribuzione neutra
+            if (recognizedPixels < data.length * 0.01) {
+                return {
+                    delta: 0.33,
+                    relation: 0.34,
+                    process: 0.33,
+                    coverage: coverage
+                };
+            }
+            
+            // Calcola distribuzione solo sugli oggetti riconosciuti
             return {
-                delta: counts.delta / total,
-                relation: counts.relation / total,
-                process: counts.process / total
+                delta: counts.delta / recognizedPixels,
+                relation: counts.relation / recognizedPixels,
+                process: counts.process / recognizedPixels,
+                coverage: coverage
             };
         }
         
@@ -800,6 +825,17 @@
                 elements.kValue.classList.add('alert');
             } else {
                 elements.kValue.classList.remove('alert');
+            }
+            
+            // Copertura
+            const coveragePct = Math.round((ear.coverage || 0) * 100);
+            elements.coverageValue.textContent = coveragePct + '%';
+            if (coveragePct < 5) {
+                elements.coverageValue.style.color = 'var(--process-color)';
+            } else if (coveragePct < 20) {
+                elements.coverageValue.style.color = 'var(--alert-color)';
+            } else {
+                elements.coverageValue.style.color = 'var(--relation-color)';
             }
             
             // Stato
