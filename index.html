@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>EAR Pilot — SIMULATORE</title>
+    <title>EAR Pilot — Guida Autonoma</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Space+Grotesk:wght@400;700&display=swap');
         
@@ -18,8 +18,6 @@
             --warning: #f59e0b;
             --text: #f0f0f0;
             --muted: #888;
-            --road: #1a1a2e;
-            --grass: #0d3320;
         }
         
         body {
@@ -31,84 +29,58 @@
         }
         
         .container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
+            display: flex;
+            flex-direction: column;
             min-height: 100vh;
             padding: 8px;
             gap: 8px;
         }
         
-        @media (max-width: 900px) {
-            .container {
-                grid-template-columns: 1fr;
-            }
-        }
-        
         /* Header */
         .header {
-            grid-column: span 2;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 8px 12px;
-            background: var(--card);
-            border-radius: 12px;
-        }
-        
-        @media (max-width: 900px) {
-            .header { grid-column: span 1; }
+            padding: 4px 0;
         }
         
         .logo {
             font-family: 'Space Grotesk', sans-serif;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: 700;
         }
         
-        .logo span { color: var(--process); }
-        .logo .sim { color: var(--warning); font-size: 0.7rem; margin-left: 8px; }
+        .logo span { opacity: 0.5; }
         
-        .mode-indicator {
+        .connection {
             display: flex;
             align-items: center;
-            gap: 8px;
-            font-size: 0.7rem;
-            padding: 6px 12px;
-            background: rgba(16, 185, 129, 0.15);
-            border: 1px solid var(--relation);
-            border-radius: 20px;
-            color: var(--relation);
+            gap: 6px;
+            font-size: 0.65rem;
+            padding: 4px 10px;
+            background: var(--card);
+            border-radius: 12px;
         }
         
-        /* Panels */
-        .panel {
+        .conn-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--process);
+        }
+        
+        .conn-dot.connected { background: var(--relation); }
+        
+        /* Video Area */
+        .video-area {
+            position: relative;
+            flex: 1;
+            min-height: 300px;
             background: var(--card);
             border-radius: 12px;
             overflow: hidden;
-            display: flex;
-            flex-direction: column;
         }
         
-        .panel-header {
-            padding: 10px 14px;
-            background: rgba(255,255,255,0.03);
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            font-size: 0.7rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            color: var(--muted);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .panel-content {
-            flex: 1;
-            position: relative;
-            min-height: 300px;
-        }
-        
-        /* Video Area */
         #video {
             width: 100%;
             height: 100%;
@@ -123,7 +95,7 @@
             pointer-events: none;
         }
         
-        /* Zones overlay */
+        /* Zone indicators */
         .zones-overlay {
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -133,7 +105,7 @@
         
         .zone {
             flex: 1;
-            border-right: 2px dashed rgba(255,255,255,0.15);
+            border-right: 2px dashed rgba(255,255,255,0.2);
             display: flex;
             flex-direction: column;
             justify-content: flex-end;
@@ -143,25 +115,25 @@
         .zone:last-child { border-right: none; }
         
         .zone-label {
-            font-size: 0.55rem;
+            font-size: 0.6rem;
             text-align: center;
-            background: rgba(0,0,0,0.7);
-            padding: 3px 6px;
+            background: rgba(0,0,0,0.6);
+            padding: 4px;
             border-radius: 4px;
             margin-bottom: 4px;
         }
         
         .zone-bar {
-            height: 6px;
+            height: 8px;
             background: rgba(255,255,255,0.1);
-            border-radius: 3px;
+            border-radius: 4px;
             overflow: hidden;
         }
         
         .zone-bar-fill {
             height: 100%;
             background: var(--process);
-            transition: width 0.1s;
+            transition: width 0.15s;
         }
         
         /* Command display */
@@ -170,9 +142,9 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 2.5rem;
+            font-size: 3rem;
             font-weight: 700;
-            text-shadow: 0 0 20px rgba(0,0,0,0.9);
+            text-shadow: 0 0 20px rgba(0,0,0,0.8);
             opacity: 0.9;
         }
         
@@ -182,15 +154,8 @@
         .cmd-right { color: var(--delta); }
         .cmd-stop { color: var(--process); }
         
-        /* Simulator Canvas */
-        #simCanvas {
-            width: 100%;
-            height: 100%;
-            background: var(--grass);
-        }
-        
         /* HUD */
-        .hud {
+        .hud-top {
             position: absolute;
             top: 8px; left: 8px; right: 8px;
             display: flex;
@@ -199,24 +164,16 @@
         }
         
         .hud-item {
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.7);
             padding: 4px 8px;
             border-radius: 4px;
         }
         
-        /* Controls area */
-        .controls-area {
-            grid-column: span 2;
+        /* Controls */
+        .controls {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: 1fr 1fr;
             gap: 8px;
-        }
-        
-        @media (max-width: 900px) {
-            .controls-area {
-                grid-column: span 1;
-                grid-template-columns: repeat(2, 1fr);
-            }
         }
         
         .control-card {
@@ -240,8 +197,8 @@
         
         .mode-btn {
             flex: 1;
-            padding: 8px 4px;
-            font-size: 0.65rem;
+            padding: 8px;
+            font-size: 0.7rem;
             font-family: inherit;
             background: rgba(255,255,255,0.05);
             color: var(--text);
@@ -256,10 +213,124 @@
             background: rgba(16, 185, 129, 0.1);
         }
         
-        /* EAR Display */
-        .ear-display {
+        /* Steering display */
+        .steering {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .steering-bar {
+            flex: 1;
+            height: 20px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 4px;
+            position: relative;
+        }
+        
+        .steering-center {
+            position: absolute;
+            top: 0; bottom: 0;
+            left: 50%;
+            width: 2px;
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .steering-indicator {
+            position: absolute;
+            top: 2px; bottom: 2px;
+            width: 20px;
+            background: var(--delta);
+            border-radius: 3px;
+            left: calc(50% - 10px);
+            transition: left 0.1s;
+        }
+        
+        .steering-value {
+            width: 40px;
+            text-align: center;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+        
+        /* Speed control */
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .speed-slider {
+            flex: 1;
+            -webkit-appearance: none;
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            outline: none;
+        }
+        
+        .speed-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--relation);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        .speed-value {
+            width: 40px;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+        
+        /* Connection panel */
+        .conn-panel {
+            grid-column: span 2;
+        }
+        
+        .conn-row {
             display: flex;
             gap: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .conn-input {
+            flex: 1;
+            padding: 8px;
+            font-family: inherit;
+            font-size: 0.75rem;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            color: var(--text);
+        }
+        
+        .conn-btn {
+            padding: 8px 16px;
+            font-family: inherit;
+            font-size: 0.75rem;
+            background: var(--delta);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        
+        .conn-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .conn-status {
+            font-size: 0.65rem;
+            color: var(--muted);
+        }
+        
+        /* EAR Meters mini */
+        .ear-mini {
+            display: flex;
+            gap: 12px;
         }
         
         .ear-item {
@@ -281,86 +352,11 @@
             color: var(--muted);
         }
         
-        /* Steering display */
-        .steering {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        
-        .steering-bar {
-            flex: 1;
-            height: 16px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 4px;
-            position: relative;
-        }
-        
-        .steering-center {
-            position: absolute;
-            top: 0; bottom: 0;
-            left: 50%;
-            width: 2px;
-            background: rgba(255,255,255,0.3);
-        }
-        
-        .steering-indicator {
-            position: absolute;
-            top: 2px; bottom: 2px;
-            width: 16px;
-            background: var(--delta);
-            border-radius: 3px;
-            left: calc(50% - 8px);
-            transition: left 0.1s;
-        }
-        
-        .steering-value {
-            width: 35px;
-            text-align: center;
-            font-size: 0.7rem;
-            font-weight: 700;
-        }
-        
-        /* Command log */
-        .command-log {
-            grid-column: span 2;
-            background: var(--card);
-            border-radius: 10px;
-            padding: 12px;
-            max-height: 100px;
-            overflow-y: auto;
-        }
-        
-        @media (max-width: 900px) {
-            .command-log { grid-column: span 1; }
-        }
-        
-        .command-log h4 {
-            font-size: 0.55rem;
-            color: var(--muted);
-            text-transform: uppercase;
-            margin-bottom: 8px;
-        }
-        
-        .log-entries {
-            font-size: 0.6rem;
-            font-family: 'JetBrains Mono', monospace;
-            color: var(--muted);
-        }
-        
-        .log-entry {
-            padding: 2px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.03);
-        }
-        
-        .log-entry .cmd { color: var(--relation); font-weight: 700; }
-        .log-entry .time { color: var(--muted); opacity: 0.5; }
-        
         /* Start overlay */
         .start-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(10,10,15,0.98);
+            background: rgba(10,10,15,0.97);
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -374,27 +370,17 @@
         
         .start-title {
             font-family: 'Space Grotesk', sans-serif;
-            font-size: 2.2rem;
+            font-size: 2rem;
             font-weight: 700;
-            background: linear-gradient(135deg, var(--delta), var(--warning));
+            background: linear-gradient(135deg, var(--delta), var(--process));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 4px;
-        }
-        
-        .start-sub {
-            color: var(--warning);
-            font-size: 0.9rem;
             margin-bottom: 8px;
         }
         
-        .start-desc {
+        .start-sub {
             color: var(--muted);
-            font-size: 0.75rem;
-            max-width: 400px;
             margin-bottom: 24px;
-            line-height: 1.5;
         }
         
         .start-btn {
@@ -402,22 +388,11 @@
             font-family: 'Space Grotesk', sans-serif;
             font-size: 1rem;
             font-weight: 700;
-            background: linear-gradient(135deg, var(--delta), var(--warning));
+            background: linear-gradient(135deg, var(--delta), var(--process));
             color: white;
             border: none;
             border-radius: 10px;
             cursor: pointer;
-            margin-bottom: 12px;
-        }
-        
-        .start-btn:hover {
-            transform: scale(1.02);
-        }
-        
-        .start-note {
-            color: var(--muted);
-            font-size: 0.65rem;
-            max-width: 350px;
         }
         
         .loading {
@@ -427,133 +402,53 @@
         }
         
         .loading.hidden { display: none; }
-
-        /* Speed slider */
-        .speed-control {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        
-        .speed-slider {
-            flex: 1;
-            -webkit-appearance: none;
-            height: 6px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 3px;
-            outline: none;
-        }
-        
-        .speed-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 16px;
-            height: 16px;
-            background: var(--relation);
-            border-radius: 50%;
-            cursor: pointer;
-        }
-        
-        .speed-value {
-            width: 30px;
-            font-size: 0.7rem;
-            font-weight: 700;
-        }
-
-        /* Keyboard hint */
-        .keyboard-hint {
-            position: absolute;
-            bottom: 8px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0,0,0,0.8);
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 0.55rem;
-            color: var(--muted);
-        }
-        
-        .key {
-            display: inline-block;
-            background: rgba(255,255,255,0.1);
-            padding: 2px 6px;
-            border-radius: 3px;
-            margin: 0 2px;
-        }
     </style>
 </head>
 <body>
     <div class="start-overlay" id="startOverlay">
         <div class="start-title">EAR PILOT</div>
-        <div class="start-sub">🧪 SIMULATORE</div>
-        <div class="start-desc">
-            Testa il sistema EAR completo PRIMA di costruire l'hardware.<br>
-            La camera rileva il movimento (Δ ⇄ ⟳) e la macchinina virtuale risponde in tempo reale.
-        </div>
-        <button class="start-btn" id="startBtn">AVVIA SIMULATORE</button>
-        <div class="start-note">
-            Richiede accesso alla camera.<br>
-            Muovi oggetti davanti alla camera per vedere la macchinina reagire.
-        </div>
+        <div class="start-sub">Guida Autonoma con Visione EAR</div>
+        <button class="start-btn" id="startBtn">AVVIA</button>
         <div class="loading hidden" id="loading">Accesso camera...</div>
     </div>
     
     <div class="container">
         <div class="header">
-            <div class="logo">EAR <span>PILOT</span> <span class="sim">SIMULATORE</span></div>
-            <div class="mode-indicator">
-                <span>●</span> Simulazione Attiva
+            <div class="logo">EAR <span>PILOT</span></div>
+            <div class="connection">
+                <div class="conn-dot" id="connDot"></div>
+                <span id="connText">Non connesso</span>
             </div>
         </div>
         
-        <!-- Camera Panel -->
-        <div class="panel">
-            <div class="panel-header">
-                <span>📹 Camera — Visione EAR</span>
-                <span id="fps">-- fps</span>
+        <div class="video-area">
+            <video id="video" playsinline autoplay muted></video>
+            <canvas id="overlay"></canvas>
+            
+            <div class="zones-overlay">
+                <div class="zone" id="zoneLeft">
+                    <div class="zone-label">SX</div>
+                    <div class="zone-bar"><div class="zone-bar-fill" id="zoneBarLeft"></div></div>
+                </div>
+                <div class="zone" id="zoneCenter">
+                    <div class="zone-label">CENTRO</div>
+                    <div class="zone-bar"><div class="zone-bar-fill" id="zoneBarCenter"></div></div>
+                </div>
+                <div class="zone" id="zoneRight">
+                    <div class="zone-label">DX</div>
+                    <div class="zone-bar"><div class="zone-bar-fill" id="zoneBarRight"></div></div>
+                </div>
             </div>
-            <div class="panel-content">
-                <video id="video" playsinline autoplay muted></video>
-                <canvas id="overlay"></canvas>
-                
-                <div class="zones-overlay">
-                    <div class="zone">
-                        <div class="zone-label">⟳ SX</div>
-                        <div class="zone-bar"><div class="zone-bar-fill" id="zoneBarLeft"></div></div>
-                    </div>
-                    <div class="zone">
-                        <div class="zone-label">⟳ CENTRO</div>
-                        <div class="zone-bar"><div class="zone-bar-fill" id="zoneBarCenter"></div></div>
-                    </div>
-                    <div class="zone">
-                        <div class="zone-label">⟳ DX</div>
-                        <div class="zone-bar"><div class="zone-bar-fill" id="zoneBarRight"></div></div>
-                    </div>
-                </div>
-                
-                <div class="command-display" id="cmdDisplay">—</div>
-                
-                <div class="hud">
-                    <div class="hud-item">K: <span id="kValue">0.000</span></div>
-                </div>
+            
+            <div class="command-display" id="cmdDisplay">—</div>
+            
+            <div class="hud-top">
+                <div class="hud-item" id="fps">-- fps</div>
+                <div class="hud-item">K: <span id="kValue">0.000</span></div>
             </div>
         </div>
         
-        <!-- Simulator Panel -->
-        <div class="panel">
-            <div class="panel-header">
-                <span>🚗 Simulatore Macchinina</span>
-                <span id="simStatus">In attesa...</span>
-            </div>
-            <div class="panel-content">
-                <canvas id="simCanvas"></canvas>
-                <div class="keyboard-hint">
-                    Manuale: <span class="key">↑</span><span class="key">↓</span><span class="key">←</span><span class="key">→</span> <span class="key">SPACE</span>=stop
-                </div>
-            </div>
-        </div>
-        
-        <!-- Controls -->
-        <div class="controls-area">
+        <div class="controls">
             <div class="control-card">
                 <h4>Modalità</h4>
                 <div class="mode-btns">
@@ -574,16 +469,16 @@
             </div>
             
             <div class="control-card">
-                <h4>Velocità Sim</h4>
+                <h4>Velocità Max</h4>
                 <div class="speed-control">
-                    <input type="range" class="speed-slider" id="speedSlider" min="1" max="5" value="3">
-                    <div class="speed-value" id="speedValue">3x</div>
+                    <input type="range" class="speed-slider" id="speedSlider" min="50" max="255" value="150">
+                    <div class="speed-value" id="speedValue">150</div>
                 </div>
             </div>
             
             <div class="control-card">
                 <h4>EAR Totale</h4>
-                <div class="ear-display">
+                <div class="ear-mini">
                     <div class="ear-item">
                         <div class="ear-symbol delta">Δ</div>
                         <div class="ear-value" id="earDelta">0%</div>
@@ -599,40 +494,58 @@
                 </div>
             </div>
             
-            <div class="command-log">
-                <h4>📋 Log Comandi (ultimi invii)</h4>
-                <div class="log-entries" id="logEntries">
-                    <div class="log-entry"><span class="time">--:--:--</span> In attesa...</div>
+            <div class="control-card conn-panel">
+                <h4>Connessione Arduino (WebSocket)</h4>
+                <div class="conn-row">
+                    <input type="text" class="conn-input" id="wsUrl" placeholder="ws://192.168.x.x:81" value="ws://192.168.4.1:81">
+                    <button class="conn-btn" id="connectBtn">Connetti</button>
                 </div>
+                <div class="conn-status" id="connStatus">Inserisci IP dell'ESP32 e premi Connetti</div>
             </div>
         </div>
     </div>
 
     <script>
-        // ============== CONFIGURAZIONE ==============
+        // ============================================
+        // EAR PILOT v4 - Autonomous RC Car Controller
+        // ============================================
+        
         const CONFIG = {
-            PROCESS_WIDTH: 160,
-            PROCESS_HEIGHT: 120,
-            MOTION_THRESHOLD: 25,
-            OBSTACLE_THRESHOLD: 0.08,
-            CLEAR_THRESHOLD: 0.03,
-            STEER_GAIN: 2.5,
+            MOTION_THRESHOLD: 20,
+            UPDATE_INTERVAL: 80,
             SMOOTHING: 0.3,
-            K_CRIT: 0.35
+            ANALYSIS_SCALE: 0.35,  // Qualità più alta
+            K_CRIT: 0.35,
+            // Soglie guida
+            OBSTACLE_THRESHOLD: 0.15,  // ⟳ > 15% = ostacolo
+            CLEAR_THRESHOLD: 0.05,     // ⟳ < 5% = libero
+            STEER_GAIN: 2.0
         };
-
-        // ============== ELEMENTI DOM ==============
+        
+        // Stato
+        let isRunning = false;
+        let isAutoMode = true;
+        let previousFrame = null;
+        let currentEAR = { delta: 0.33, relation: 0.33, process: 0.33 };
+        let lastEAR = { ...currentEAR };
+        let zoneMotion = { left: 0, center: 0, right: 0 };
+        let currentCommand = 'S';
+        let currentSteering = 0;
+        let maxSpeed = 150;
+        let ws = null;
+        let frameCount = 0;
+        let lastFpsTime = Date.now();
+        
+        // DOM
         const el = {
             startOverlay: document.getElementById('startOverlay'),
             startBtn: document.getElementById('startBtn'),
             loading: document.getElementById('loading'),
             video: document.getElementById('video'),
             overlay: document.getElementById('overlay'),
-            simCanvas: document.getElementById('simCanvas'),
-            cmdDisplay: document.getElementById('cmdDisplay'),
             fps: document.getElementById('fps'),
             kValue: document.getElementById('kValue'),
-            simStatus: document.getElementById('simStatus'),
+            cmdDisplay: document.getElementById('cmdDisplay'),
             zoneBarLeft: document.getElementById('zoneBarLeft'),
             zoneBarCenter: document.getElementById('zoneBarCenter'),
             zoneBarRight: document.getElementById('zoneBarRight'),
@@ -645,409 +558,155 @@
             earProcess: document.getElementById('earProcess'),
             modeAuto: document.getElementById('modeAuto'),
             modeManual: document.getElementById('modeManual'),
-            logEntries: document.getElementById('logEntries')
+            wsUrl: document.getElementById('wsUrl'),
+            connectBtn: document.getElementById('connectBtn'),
+            connStatus: document.getElementById('connStatus'),
+            connDot: document.getElementById('connDot'),
+            connText: document.getElementById('connText')
         };
-
-        // ============== STATO ==============
-        let isAutoMode = true;
-        let currentCommand = 'S';
-        let currentSteering = 0;
-        let currentEAR = { delta: 0, relation: 0, process: 0 };
-        let zoneMotion = { left: 0, center: 0, right: 0 };
-        let prevFrame = null;
-        let frameCount = 0;
-        let lastFpsTime = performance.now();
-        let simSpeed = 3;
-        let commandLog = [];
-
-        // ============== SIMULATORE MACCHININA ==============
-        const car = {
-            x: 0,
-            y: 0,
-            angle: -Math.PI / 2, // Punta verso l'alto
-            speed: 0,
-            targetSpeed: 0,
-            steering: 0,
-            width: 30,
-            height: 50,
-            trail: []
-        };
-
-        const obstacles = [];
-        let simCtx = null;
-
-        function initSimulator() {
-            const canvas = el.simCanvas;
-            const rect = canvas.parentElement.getBoundingClientRect();
-            canvas.width = rect.width;
-            canvas.height = rect.height;
-            simCtx = canvas.getContext('2d');
-            
-            // Posizione iniziale
-            car.x = canvas.width / 2;
-            car.y = canvas.height - 80;
-            car.trail = [];
-            
-            // Genera ostacoli casuali
-            generateObstacles();
-            
-            // Avvia loop simulatore
-            requestAnimationFrame(updateSimulator);
-        }
-
-        function generateObstacles() {
-            obstacles.length = 0;
-            const canvas = el.simCanvas;
-            
-            // Ostacoli statici (alberi/rocce ai lati)
-            for (let i = 0; i < 8; i++) {
-                const side = Math.random() > 0.5 ? 1 : -1;
-                obstacles.push({
-                    x: canvas.width / 2 + side * (100 + Math.random() * 80),
-                    y: 50 + Math.random() * (canvas.height - 150),
-                    radius: 15 + Math.random() * 15,
-                    type: 'static'
-                });
-            }
-        }
-
-        function updateSimulator() {
-            if (!simCtx) {
-                requestAnimationFrame(updateSimulator);
-                return;
-            }
-
-            const canvas = el.simCanvas;
-            const ctx = simCtx;
-            
-            // Aggiorna fisica
-            updateCarPhysics();
-            
-            // Pulisci canvas
-            ctx.fillStyle = '#0d3320'; // Erba
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Disegna strada
-            drawRoad(ctx, canvas);
-            
-            // Disegna scia
-            drawTrail(ctx);
-            
-            // Disegna ostacoli
-            drawObstacles(ctx);
-            
-            // Disegna macchinina
-            drawCar(ctx);
-            
-            // Disegna HUD simulatore
-            drawSimHUD(ctx, canvas);
-            
-            requestAnimationFrame(updateSimulator);
-        }
-
-        function updateCarPhysics() {
-            const speedMultiplier = simSpeed * 0.5;
-            
-            // Mappa comandi a fisica
-            switch (currentCommand) {
-                case 'F':
-                    car.targetSpeed = 3 * speedMultiplier;
-                    break;
-                case 'B':
-                    car.targetSpeed = -2 * speedMultiplier;
-                    break;
-                case 'S':
-                    car.targetSpeed = 0;
-                    break;
-                case 'L':
-                    car.targetSpeed = 2 * speedMultiplier;
-                    car.steering = -0.05 * speedMultiplier;
-                    break;
-                case 'R':
-                    car.targetSpeed = 2 * speedMultiplier;
-                    car.steering = 0.05 * speedMultiplier;
-                    break;
-            }
-            
-            // Sterzo graduale basato su currentSteering
-            if (currentCommand === 'F' || currentCommand === 'B') {
-                car.steering = (currentSteering / 45) * 0.03 * speedMultiplier;
-            }
-            
-            // Smoothing velocità
-            car.speed += (car.targetSpeed - car.speed) * 0.1;
-            
-            // Aggiorna posizione
-            car.angle += car.steering * car.speed * 0.5;
-            car.x += Math.cos(car.angle) * car.speed;
-            car.y += Math.sin(car.angle) * car.speed;
-            
-            // Attrito sterzo
-            car.steering *= 0.9;
-            
-            // Limiti canvas (wrap around)
-            const canvas = el.simCanvas;
-            if (car.y < -50) {
-                car.y = canvas.height + 50;
-                car.trail = [];
-                generateObstacles();
-            }
-            if (car.y > canvas.height + 50) {
-                car.y = -50;
-                car.trail = [];
-            }
-            if (car.x < 20) car.x = 20;
-            if (car.x > canvas.width - 20) car.x = canvas.width - 20;
-            
-            // Aggiungi alla scia
-            if (Math.abs(car.speed) > 0.5) {
-                car.trail.push({ x: car.x, y: car.y });
-                if (car.trail.length > 100) car.trail.shift();
-            }
-        }
-
-        function drawRoad(ctx, canvas) {
-            const roadWidth = 140;
-            const centerX = canvas.width / 2;
-            
-            // Strada principale
-            ctx.fillStyle = '#1a1a2e';
-            ctx.fillRect(centerX - roadWidth / 2, 0, roadWidth, canvas.height);
-            
-            // Linee laterali
-            ctx.strokeStyle = '#fff';
-            ctx.lineWidth = 3;
-            ctx.setLineDash([]);
-            ctx.beginPath();
-            ctx.moveTo(centerX - roadWidth / 2, 0);
-            ctx.lineTo(centerX - roadWidth / 2, canvas.height);
-            ctx.moveTo(centerX + roadWidth / 2, 0);
-            ctx.lineTo(centerX + roadWidth / 2, canvas.height);
-            ctx.stroke();
-            
-            // Linea centrale tratteggiata
-            ctx.strokeStyle = '#f59e0b';
-            ctx.lineWidth = 2;
-            ctx.setLineDash([20, 20]);
-            ctx.beginPath();
-            ctx.moveTo(centerX, 0);
-            ctx.lineTo(centerX, canvas.height);
-            ctx.stroke();
-            ctx.setLineDash([]);
-        }
-
-        function drawTrail(ctx) {
-            if (car.trail.length < 2) return;
-            
-            ctx.strokeStyle = 'rgba(59, 130, 246, 0.3)';
-            ctx.lineWidth = 8;
-            ctx.lineCap = 'round';
-            ctx.beginPath();
-            ctx.moveTo(car.trail[0].x, car.trail[0].y);
-            for (let i = 1; i < car.trail.length; i++) {
-                ctx.lineTo(car.trail[i].x, car.trail[i].y);
-            }
-            ctx.stroke();
-        }
-
-        function drawObstacles(ctx) {
-            obstacles.forEach(obs => {
-                // Ombra
-                ctx.fillStyle = 'rgba(0,0,0,0.3)';
-                ctx.beginPath();
-                ctx.arc(obs.x + 3, obs.y + 3, obs.radius, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Ostacolo
-                ctx.fillStyle = obs.type === 'static' ? '#2d5a27' : '#ef4444';
-                ctx.beginPath();
-                ctx.arc(obs.x, obs.y, obs.radius, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Highlight
-                ctx.fillStyle = 'rgba(255,255,255,0.2)';
-                ctx.beginPath();
-                ctx.arc(obs.x - obs.radius * 0.3, obs.y - obs.radius * 0.3, obs.radius * 0.4, 0, Math.PI * 2);
-                ctx.fill();
-            });
-        }
-
-        function drawCar(ctx) {
-            ctx.save();
-            ctx.translate(car.x, car.y);
-            ctx.rotate(car.angle + Math.PI / 2);
-            
-            // Ombra
-            ctx.fillStyle = 'rgba(0,0,0,0.4)';
-            ctx.fillRect(-car.width / 2 + 4, -car.height / 2 + 4, car.width, car.height);
-            
-            // Corpo
-            ctx.fillStyle = '#3b82f6';
-            ctx.fillRect(-car.width / 2, -car.height / 2, car.width, car.height);
-            
-            // Tetto
-            ctx.fillStyle = '#1e40af';
-            ctx.fillRect(-car.width / 2 + 5, -car.height / 2 + 10, car.width - 10, car.height - 25);
-            
-            // Parabrezza
-            ctx.fillStyle = '#60a5fa';
-            ctx.fillRect(-car.width / 2 + 7, -car.height / 2 + 5, car.width - 14, 8);
-            
-            // Fari posteriori
-            ctx.fillStyle = '#ef4444';
-            ctx.fillRect(-car.width / 2 + 3, car.height / 2 - 8, 8, 5);
-            ctx.fillRect(car.width / 2 - 11, car.height / 2 - 8, 8, 5);
-            
-            // Fari anteriori (accesi se in movimento)
-            if (Math.abs(car.speed) > 0.5) {
-                ctx.fillStyle = '#fef08a';
-                ctx.shadowColor = '#fef08a';
-                ctx.shadowBlur = 15;
-            } else {
-                ctx.fillStyle = '#fde047';
-                ctx.shadowBlur = 0;
-            }
-            ctx.fillRect(-car.width / 2 + 3, -car.height / 2, 8, 5);
-            ctx.fillRect(car.width / 2 - 11, -car.height / 2, 8, 5);
-            ctx.shadowBlur = 0;
-            
-            // Ruote
-            ctx.fillStyle = '#1f2937';
-            ctx.fillRect(-car.width / 2 - 3, -car.height / 2 + 5, 6, 12);
-            ctx.fillRect(car.width / 2 - 3, -car.height / 2 + 5, 6, 12);
-            ctx.fillRect(-car.width / 2 - 3, car.height / 2 - 17, 6, 12);
-            ctx.fillRect(car.width / 2 - 3, car.height / 2 - 17, 6, 12);
-            
-            ctx.restore();
-        }
-
-        function drawSimHUD(ctx, canvas) {
-            // Stato simulatore
-            const cmdColors = { F: '#10b981', B: '#f59e0b', L: '#3b82f6', R: '#3b82f6', S: '#ef4444' };
-            const cmdNames = { F: 'AVANTI', B: 'INDIETRO', L: 'SINISTRA', R: 'DESTRA', S: 'STOP' };
-            
-            ctx.fillStyle = 'rgba(0,0,0,0.7)';
-            ctx.fillRect(10, 10, 120, 60);
-            
-            ctx.fillStyle = cmdColors[currentCommand] || '#888';
-            ctx.font = 'bold 14px "Space Grotesk", sans-serif';
-            ctx.fillText(cmdNames[currentCommand] || '—', 20, 32);
-            
-            ctx.fillStyle = '#888';
-            ctx.font = '11px "JetBrains Mono", monospace';
-            ctx.fillText(`Vel: ${car.speed.toFixed(1)}`, 20, 50);
-            ctx.fillText(`Ang: ${(car.steering * 100).toFixed(0)}°`, 70, 50);
-            
-            // Indicatore EAR
-            ctx.fillStyle = 'rgba(0,0,0,0.7)';
-            ctx.fillRect(canvas.width - 90, 10, 80, 25);
-            ctx.fillStyle = '#3b82f6';
-            ctx.font = '12px "JetBrains Mono", monospace';
-            ctx.fillText('Δ⇄⟳', canvas.width - 75, 28);
-        }
-
-        // ============== PROCESSING VIDEO ==============
+        
+        // Canvas elaborazione
         const processCanvas = document.createElement('canvas');
-        processCanvas.width = CONFIG.PROCESS_WIDTH;
-        processCanvas.height = CONFIG.PROCESS_HEIGHT;
         const processCtx = processCanvas.getContext('2d', { willReadFrequently: true });
-
-        function processFrame() {
-            if (!el.video.videoWidth) {
-                requestAnimationFrame(processFrame);
-                return;
+        
+        // Event listeners
+        el.startBtn.addEventListener('click', startApp);
+        el.modeAuto.addEventListener('click', () => setMode(true));
+        el.modeManual.addEventListener('click', () => setMode(false));
+        el.speedSlider.addEventListener('input', () => {
+            maxSpeed = parseInt(el.speedSlider.value);
+            el.speedValue.textContent = maxSpeed;
+        });
+        el.connectBtn.addEventListener('click', toggleConnection);
+        
+        function setMode(auto) {
+            isAutoMode = auto;
+            el.modeAuto.classList.toggle('active', auto);
+            el.modeManual.classList.toggle('active', !auto);
+            if (!auto) {
+                sendCommand('S');
             }
-
-            // Resize overlay
-            if (el.overlay.width !== el.video.videoWidth) {
-                el.overlay.width = el.video.videoWidth;
-                el.overlay.height = el.video.videoHeight;
-            }
-
-            // Disegna frame ridotto
-            processCtx.drawImage(el.video, 0, 0, CONFIG.PROCESS_WIDTH, CONFIG.PROCESS_HEIGHT);
-            const currentFrame = processCtx.getImageData(0, 0, CONFIG.PROCESS_WIDTH, CONFIG.PROCESS_HEIGHT);
-
-            if (prevFrame) {
-                // Analisi EAR
-                const analysis = analyzeEAR(prevFrame, currentFrame);
-                
-                // Smoothing
-                currentEAR.delta = lerp(currentEAR.delta, analysis.total.delta, CONFIG.SMOOTHING);
-                currentEAR.relation = lerp(currentEAR.relation, analysis.total.relation, CONFIG.SMOOTHING);
-                currentEAR.process = lerp(currentEAR.process, analysis.total.process, CONFIG.SMOOTHING);
-                
-                zoneMotion.left = lerp(zoneMotion.left, analysis.zones.left, CONFIG.SMOOTHING);
-                zoneMotion.center = lerp(zoneMotion.center, analysis.zones.center, CONFIG.SMOOTHING);
-                zoneMotion.right = lerp(zoneMotion.right, analysis.zones.right, CONFIG.SMOOTHING);
-
-                // Calcola K
-                const k = calculateK(
-                    { delta: currentEAR.delta, relation: currentEAR.relation, process: currentEAR.process },
-                    analysis.total
-                );
-
-                // Decisione di guida (solo in AUTO)
-                if (isAutoMode) {
-                    const drive = computeDriveCommand();
-                    if (drive.command !== currentCommand) {
-                        logCommand(drive.command);
-                    }
-                    currentCommand = drive.command;
-                    currentSteering = drive.steering;
-                }
-
-                // Disegna overlay
-                drawOverlay(analysis.motionMap);
-
-                // Aggiorna UI
-                updateUI(k);
-
-                // FPS
-                frameCount++;
-                const now = performance.now();
-                if (now - lastFpsTime > 1000) {
-                    el.fps.textContent = frameCount + ' fps';
-                    frameCount = 0;
-                    lastFpsTime = now;
-                }
-            }
-
-            prevFrame = currentFrame;
-            requestAnimationFrame(processFrame);
         }
-
-        function analyzeEAR(prev, curr) {
-            const w = CONFIG.PROCESS_WIDTH;
-            const h = CONFIG.PROCESS_HEIGHT;
+        
+        async function startApp() {
+            el.startBtn.style.display = 'none';
+            el.loading.classList.remove('hidden');
+            
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: 'environment',
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    },
+                    audio: false
+                });
+                
+                el.video.srcObject = stream;
+                await el.video.play();
+                
+                const w = el.video.videoWidth;
+                const h = el.video.videoHeight;
+                
+                el.overlay.width = w;
+                el.overlay.height = h;
+                
+                processCanvas.width = Math.floor(w * CONFIG.ANALYSIS_SCALE);
+                processCanvas.height = Math.floor(h * CONFIG.ANALYSIS_SCALE);
+                
+                el.startOverlay.classList.add('hidden');
+                
+                isRunning = true;
+                requestAnimationFrame(mainLoop);
+                
+            } catch (err) {
+                el.loading.textContent = 'Errore: ' + err.message;
+            }
+        }
+        
+        function mainLoop() {
+            if (!isRunning) return;
+            
+            // Cattura frame
+            processCtx.drawImage(el.video, 0, 0, processCanvas.width, processCanvas.height);
+            const currentFrame = processCtx.getImageData(0, 0, processCanvas.width, processCanvas.height);
+            
+            if (previousFrame) {
+                // Analizza movimento per zone
+                const result = analyzeMotionZones(previousFrame, currentFrame);
+                
+                // Smooth EAR totale
+                currentEAR.delta = lerp(currentEAR.delta, result.total.delta, CONFIG.SMOOTHING);
+                currentEAR.relation = lerp(currentEAR.relation, result.total.relation, CONFIG.SMOOTHING);
+                currentEAR.process = lerp(currentEAR.process, result.total.process, CONFIG.SMOOTHING);
+                
+                // Smooth zone motion
+                zoneMotion.left = lerp(zoneMotion.left, result.zones.left, CONFIG.SMOOTHING);
+                zoneMotion.center = lerp(zoneMotion.center, result.zones.center, CONFIG.SMOOTHING);
+                zoneMotion.right = lerp(zoneMotion.right, result.zones.right, CONFIG.SMOOTHING);
+                
+                // Calcola K
+                const k = calculateK(lastEAR, currentEAR);
+                
+                // Guida autonoma
+                if (isAutoMode) {
+                    const cmd = computeDriveCommand();
+                    if (cmd.command !== currentCommand) {
+                        currentCommand = cmd.command;
+                        sendCommand(currentCommand);
+                    }
+                    currentSteering = cmd.steering;
+                }
+                
+                // UI
+                updateUI(k);
+                drawOverlay(result.motionMap);
+                
+                lastEAR = { ...currentEAR };
+            }
+            
+            previousFrame = currentFrame;
+            
+            // FPS
+            frameCount++;
+            if (Date.now() - lastFpsTime > 1000) {
+                el.fps.textContent = frameCount + ' fps';
+                frameCount = 0;
+                lastFpsTime = Date.now();
+            }
+            
+            setTimeout(() => requestAnimationFrame(mainLoop), CONFIG.UPDATE_INTERVAL);
+        }
+        
+        function analyzeMotionZones(prev, curr) {
+            const w = prev.width;
+            const h = prev.height;
             const total = w * h;
-            const zoneWidth = w / 3;
-
-            let deltaCount = 0;
-            let relationCount = 0;
-            let processCount = 0;
-
+            const zoneWidth = Math.floor(w / 3);
+            
+            const motionMap = new Uint8Array(total);
             const zoneCounts = { left: 0, center: 0, right: 0 };
             const zonePixels = { left: 0, center: 0, right: 0 };
-            const motionMap = new Uint8Array(total);
-
-            // Pass 1: Motion detection
+            let deltaCount = 0, processCount = 0, relationCount = 0;
+            
+            // Pass 1: Detect motion
             for (let y = 0; y < h; y++) {
                 for (let x = 0; x < w; x++) {
                     const i = y * w + x;
                     const idx = i * 4;
-
-                    const prevLum = prev.data[idx] * 0.299 + prev.data[idx + 1] * 0.587 + prev.data[idx + 2] * 0.114;
-                    const currLum = curr.data[idx] * 0.299 + curr.data[idx + 1] * 0.587 + curr.data[idx + 2] * 0.114;
+                    
+                    const prevLum = prev.data[idx] * 0.299 + prev.data[idx+1] * 0.587 + prev.data[idx+2] * 0.114;
+                    const currLum = curr.data[idx] * 0.299 + curr.data[idx+1] * 0.587 + curr.data[idx+2] * 0.114;
                     const diff = Math.abs(currLum - prevLum);
-
+                    
+                    // Determina zona
                     let zone;
                     if (x < zoneWidth) zone = 'left';
                     else if (x < zoneWidth * 2) zone = 'center';
                     else zone = 'right';
-
+                    
                     zonePixels[zone]++;
-
+                    
                     if (diff > CONFIG.MOTION_THRESHOLD) {
                         motionMap[i] = 1;
                         processCount++;
@@ -1058,14 +717,15 @@
                     }
                 }
             }
-
-            // Pass 2: Edge detection
+            
+            // Pass 2: Find edges
             for (let y = 1; y < h - 1; y++) {
                 for (let x = 1; x < w - 1; x++) {
                     const i = y * w + x;
                     if (motionMap[i] === 0) {
-                        if (motionMap[i - 1] === 1 || motionMap[i + 1] === 1 ||
-                            motionMap[i - w] === 1 || motionMap[i + w] === 1) {
+                        // Check neighbors
+                        if (motionMap[i-1] === 1 || motionMap[i+1] === 1 ||
+                            motionMap[i-w] === 1 || motionMap[i+w] === 1) {
                             motionMap[i] = 2;
                             relationCount++;
                             deltaCount--;
@@ -1073,7 +733,7 @@
                     }
                 }
             }
-
+            
             return {
                 total: {
                     delta: deltaCount / total,
@@ -1088,192 +748,192 @@
                 motionMap
             };
         }
-
+        
         function computeDriveCommand() {
             const L = zoneMotion.left;
             const C = zoneMotion.center;
             const R = zoneMotion.right;
-
+            
             let command = 'F';
             let steering = 0;
-
+            
+            // Ostacolo centrale → STOP
             if (C > CONFIG.OBSTACLE_THRESHOLD * 1.5) {
                 command = 'S';
                 steering = 0;
-            } else if (R > CONFIG.OBSTACLE_THRESHOLD && R > L * 1.5) {
+            }
+            // Ostacolo a destra → SINISTRA
+            else if (R > CONFIG.OBSTACLE_THRESHOLD && R > L * 1.5) {
                 command = 'L';
                 steering = -Math.min((R - L) * CONFIG.STEER_GAIN * 100, 45);
-            } else if (L > CONFIG.OBSTACLE_THRESHOLD && L > R * 1.5) {
+            }
+            // Ostacolo a sinistra → DESTRA
+            else if (L > CONFIG.OBSTACLE_THRESHOLD && L > R * 1.5) {
                 command = 'R';
                 steering = Math.min((L - R) * CONFIG.STEER_GAIN * 100, 45);
-            } else if (C < CONFIG.CLEAR_THRESHOLD && L < CONFIG.OBSTACLE_THRESHOLD && R < CONFIG.OBSTACLE_THRESHOLD) {
+            }
+            // Via libera → AVANTI
+            else if (C < CONFIG.CLEAR_THRESHOLD && L < CONFIG.OBSTACLE_THRESHOLD && R < CONFIG.OBSTACLE_THRESHOLD) {
                 command = 'F';
+                // Leggera correzione verso il lato più libero
                 steering = (R - L) * CONFIG.STEER_GAIN * 30;
-            } else {
+            }
+            // Situazione incerta → rallenta
+            else {
                 command = 'F';
                 steering = (R - L) * CONFIG.STEER_GAIN * 50;
             }
-
+            
             return { command, steering: Math.round(steering) };
         }
-
+        
         function drawOverlay(motionMap) {
             const ctx = el.overlay.getContext('2d');
-            const w = CONFIG.PROCESS_WIDTH;
-            const h = CONFIG.PROCESS_HEIGHT;
+            const w = processCanvas.width;
+            const h = processCanvas.height;
             const cw = el.overlay.width;
             const ch = el.overlay.height;
-
+            
             ctx.clearRect(0, 0, cw, ch);
-
+            
+            // Disegna motion map (ottimizzato)
             const tempCanvas = document.createElement('canvas');
             tempCanvas.width = w;
             tempCanvas.height = h;
             const tempCtx = tempCanvas.getContext('2d');
             const imgData = tempCtx.createImageData(w, h);
-
+            
             for (let i = 0; i < motionMap.length; i++) {
                 const idx = i * 4;
                 if (motionMap[i] === 1) {
                     imgData.data[idx] = 239;
-                    imgData.data[idx + 1] = 68;
-                    imgData.data[idx + 2] = 68;
-                    imgData.data[idx + 3] = 80;
+                    imgData.data[idx+1] = 68;
+                    imgData.data[idx+2] = 68;
+                    imgData.data[idx+3] = 80;
                 } else if (motionMap[i] === 2) {
                     imgData.data[idx] = 16;
-                    imgData.data[idx + 1] = 185;
-                    imgData.data[idx + 2] = 129;
-                    imgData.data[idx + 3] = 100;
+                    imgData.data[idx+1] = 185;
+                    imgData.data[idx+2] = 129;
+                    imgData.data[idx+3] = 100;
                 }
             }
-
+            
             tempCtx.putImageData(imgData, 0, 0);
             ctx.drawImage(tempCanvas, 0, 0, cw, ch);
         }
-
+        
         function updateUI(k) {
             // Zone bars
             el.zoneBarLeft.style.width = (zoneMotion.left * 100 / 0.3) + '%';
             el.zoneBarCenter.style.width = (zoneMotion.center * 100 / 0.3) + '%';
             el.zoneBarRight.style.width = (zoneMotion.right * 100 / 0.3) + '%';
-
+            
             // K value
             el.kValue.textContent = k.toFixed(3);
-
+            
             // Command display
             const cmdSymbols = { F: '↑', B: '↓', L: '←', R: '→', S: '■' };
             const cmdClasses = { F: 'cmd-forward', B: 'cmd-back', L: 'cmd-left', R: 'cmd-right', S: 'cmd-stop' };
             el.cmdDisplay.textContent = cmdSymbols[currentCommand] || '—';
             el.cmdDisplay.className = 'command-display ' + (cmdClasses[currentCommand] || '');
-
+            
             // Steering
             const steerPct = 50 + (currentSteering / 90 * 50);
-            el.steerIndicator.style.left = `calc(${steerPct}% - 8px)`;
+            el.steerIndicator.style.left = `calc(${steerPct}% - 10px)`;
             el.steerValue.textContent = currentSteering + '°';
-
+            
             // EAR totale
             el.earDelta.textContent = Math.round(currentEAR.delta * 100) + '%';
             el.earRelation.textContent = Math.round(currentEAR.relation * 100) + '%';
             el.earProcess.textContent = Math.round(currentEAR.process * 100) + '%';
-
-            // Sim status
-            const statusTexts = { F: 'Avanti', B: 'Indietro', L: 'Sterza SX', R: 'Sterza DX', S: 'Fermo' };
-            el.simStatus.textContent = statusTexts[currentCommand] || '...';
         }
-
+        
         function calculateK(prev, curr) {
             const dD = curr.delta - prev.delta;
             const dR = curr.relation - prev.relation;
             const dP = curr.process - prev.process;
-            return Math.sqrt(dD * dD + dR * dR + dP * dP);
+            return Math.sqrt(dD*dD + dR*dR + dP*dP);
         }
-
+        
         function lerp(a, b, t) {
             return a + (b - a) * t;
         }
-
-        function logCommand(cmd) {
-            const now = new Date();
-            const time = now.toTimeString().split(' ')[0];
-            const cmdNames = { F: 'FORWARD', B: 'BACKWARD', L: 'LEFT', R: 'RIGHT', S: 'STOP' };
-            
-            commandLog.unshift({ time, cmd: cmdNames[cmd] || cmd });
-            if (commandLog.length > 10) commandLog.pop();
-            
-            el.logEntries.innerHTML = commandLog.map(entry => 
-                `<div class="log-entry"><span class="time">${entry.time}</span> → <span class="cmd">${entry.cmd}</span></div>`
-            ).join('');
-        }
-
-        // ============== EVENT HANDLERS ==============
-        el.startBtn.addEventListener('click', async () => {
-            el.startBtn.disabled = true;
-            el.loading.classList.remove('hidden');
-
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'environment', width: 640, height: 480 }
-                });
-                el.video.srcObject = stream;
-                await el.video.play();
-
-                el.startOverlay.classList.add('hidden');
-                initSimulator();
-                processFrame();
-            } catch (err) {
-                el.loading.textContent = 'Errore: ' + err.message;
+        
+        // WebSocket connection
+        function toggleConnection() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.close();
+            } else {
+                connectWebSocket();
             }
-        });
-
-        el.modeAuto.addEventListener('click', () => {
-            isAutoMode = true;
-            el.modeAuto.classList.add('active');
-            el.modeManual.classList.remove('active');
-        });
-
-        el.modeManual.addEventListener('click', () => {
-            isAutoMode = false;
-            el.modeManual.classList.add('active');
-            el.modeAuto.classList.remove('active');
-            currentCommand = 'S';
-        });
-
-        el.speedSlider.addEventListener('input', () => {
-            simSpeed = parseInt(el.speedSlider.value);
-            el.speedValue.textContent = simSpeed + 'x';
-        });
-
-        // Keyboard controls (manual mode)
+        }
+        
+        function connectWebSocket() {
+            const url = el.wsUrl.value;
+            el.connStatus.textContent = 'Connessione a ' + url + '...';
+            el.connectBtn.disabled = true;
+            
+            try {
+                ws = new WebSocket(url);
+                
+                ws.onopen = () => {
+                    el.connStatus.textContent = 'Connesso!';
+                    el.connDot.classList.add('connected');
+                    el.connText.textContent = 'Connesso';
+                    el.connectBtn.textContent = 'Disconnetti';
+                    el.connectBtn.disabled = false;
+                };
+                
+                ws.onclose = () => {
+                    el.connStatus.textContent = 'Disconnesso';
+                    el.connDot.classList.remove('connected');
+                    el.connText.textContent = 'Non connesso';
+                    el.connectBtn.textContent = 'Connetti';
+                    el.connectBtn.disabled = false;
+                };
+                
+                ws.onerror = (err) => {
+                    el.connStatus.textContent = 'Errore connessione';
+                    el.connectBtn.disabled = false;
+                };
+                
+                ws.onmessage = (msg) => {
+                    console.log('Arduino:', msg.data);
+                };
+                
+            } catch (err) {
+                el.connStatus.textContent = 'Errore: ' + err.message;
+                el.connectBtn.disabled = false;
+            }
+        }
+        
+        function sendCommand(cmd) {
+            const speed = (cmd === 'F' || cmd === 'B') ? maxSpeed : Math.round(maxSpeed * 0.7);
+            const message = cmd === 'S' ? 'S' : `${cmd}:${speed}`;
+            
+            console.log('Command:', message);
+            
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(message);
+            }
+        }
+        
+        // Manual controls (touch/keyboard)
         document.addEventListener('keydown', (e) => {
             if (!isAutoMode) {
                 const keyMap = { ArrowUp: 'F', ArrowDown: 'B', ArrowLeft: 'L', ArrowRight: 'R', Space: 'S' };
                 const cmd = keyMap[e.code];
                 if (cmd) {
-                    e.preventDefault();
-                    if (cmd !== currentCommand) logCommand(cmd);
                     currentCommand = cmd;
-                    currentSteering = cmd === 'L' ? -30 : cmd === 'R' ? 30 : 0;
+                    sendCommand(cmd);
                 }
             }
         });
-
+        
         document.addEventListener('keyup', (e) => {
             if (!isAutoMode) {
-                const keys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'];
-                if (keys.includes(e.code)) {
-                    currentCommand = 'S';
-                    currentSteering = 0;
-                }
-            }
-        });
-
-        // Resize handler
-        window.addEventListener('resize', () => {
-            if (simCtx) {
-                const canvas = el.simCanvas;
-                const rect = canvas.parentElement.getBoundingClientRect();
-                canvas.width = rect.width;
-                canvas.height = rect.height;
+                currentCommand = 'S';
+                sendCommand('S');
             }
         });
     </script>
