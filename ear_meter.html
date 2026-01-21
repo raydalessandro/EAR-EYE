@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>EAR Meter — Δ⇄⟳</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/deeplab"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Space+Grotesk:wght@300;400;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --bg-dark: #0a0a0f;
+            --bg-card: #12121a;
+            --delta-color: #3b82f6;
+            --relation-color: #10b981;
+            --process-color: #ef4444;
+            --text-primary: #f0f0f0;
+            --text-secondary: #888;
+            --alert-color: #f59e0b;
+            --glow-delta: rgba(59, 130, 246, 0.4);
+            --glow-relation: rgba(16, 185, 129, 0.4);
+            --glow-process: rgba(239, 68, 68, 0.4);
+        }
+        
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            min-height: 100dvh;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        /* Subtle grid background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 30px 30px;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .container {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            height: 100dvh;
+            padding: 12px;
+            gap: 12px;
+        }
+        
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+        }
+        
+        .logo {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        
+        .logo span {
+            opacity: 0.5;
+            font-weight: 300;
+        }
+        
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: var(--bg-card);
+            border-radius: 20px;
+            font-size: 0.75rem;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--process-color);
+            animation: pulse 2s infinite;
+        }
+        
+        .status-dot.active {
+            background: var(--relation-color);
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        /* Video container */
+        .video-container {
+            position: relative;
+            flex: 1;
+            min-height: 200px;
+            background: var(--bg-card);
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        #video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        #canvas-segmentation {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.6;
+            mix-blend-mode: screen;
+            pointer-events: none;
+        }
+        
+        .video-overlay {
+            position: absolute;
+            bottom: 12px;
+            left: 12px;
+            right: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        
+        .fps-counter {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            background: rgba(0,0,0,0.6);
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        
+        .k-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            padding: 8px 16px;
+            background: rgba(0,0,0,0.7);
+            border-radius: 12px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .k-value.alert {
+            border-color: var(--alert-color);
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
+            animation: k-alert 0.5s ease;
+        }
+        
+        @keyframes k-alert {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .k-value small {
+            font-size: 0.6rem;
+            font-weight: 400;
+            opacity: 0.6;
+        }
+        
+        /* Meters section */
+        .meters {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 16px;
+            background: var(--bg-card);
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .meter {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .meter-label {
+            width: 24px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            text-align: center;
+        }
+        
+        .meter-label.delta { color: var(--delta-color); }
+        .meter-label.relation { color: var(--relation-color); }
+        .meter-label.process { color: var(--process-color); }
+        
+        .meter-bar-container {
+            flex: 1;
+            height: 28px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 6px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .meter-bar {
+            height: 100%;
+            border-radius: 6px;
+            transition: width 0.2s ease-out;
+            position: relative;
+        }
+        
+        .meter-bar.delta {
+            background: linear-gradient(90deg, var(--delta-color), #60a5fa);
+            box-shadow: 0 0 20px var(--glow-delta);
+        }
+        
+        .meter-bar.relation {
+            background: linear-gradient(90deg, var(--relation-color), #34d399);
+            box-shadow: 0 0 20px var(--glow-relation);
+        }
+        
+        .meter-bar.process {
+            background: linear-gradient(90deg, var(--process-color), #f87171);
+            box-shadow: 0 0 20px var(--glow-process);
+        }
+        
+        .meter-value {
+            width: 55px;
+            text-align: right;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        
+        .meter-name {
+            width: 90px;
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        /* State indicator */
+        .state-section {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .state-card {
+            flex: 1;
+            padding: 16px;
+            background: var(--bg-card);
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.1);
+            text-align: center;
+        }
+        
+        .state-card h3 {
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        
+        .state-value {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        
+        .state-value.stable { color: var(--relation-color); }
+        .state-value.transition { color: var(--alert-color); }
+        .state-value.alert { color: var(--process-color); }
+        
+        /* Timeline */
+        .timeline {
+            padding: 12px 16px;
+            background: var(--bg-card);
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .timeline h3 {
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+        
+        .timeline-bar {
+            height: 40px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #timeline-canvas {
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* Start button overlay */
+        .start-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(10, 10, 15, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            padding: 24px;
+            text-align: center;
+        }
+        
+        .start-overlay.hidden {
+            display: none;
+        }
+        
+        .start-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, var(--delta-color), var(--relation-color), var(--process-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .start-subtitle {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+        }
+        
+        .ear-explanation {
+            max-width: 320px;
+            margin-bottom: 32px;
+            text-align: left;
+        }
+        
+        .ear-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding: 12px;
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .ear-symbol {
+            font-size: 1.5rem;
+            font-weight: 700;
+            width: 40px;
+            text-align: center;
+        }
+        
+        .ear-desc {
+            flex: 1;
+        }
+        
+        .ear-desc strong {
+            display: block;
+            font-size: 0.9rem;
+            margin-bottom: 2px;
+        }
+        
+        .ear-desc span {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+        
+        .start-button {
+            padding: 16px 48px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, var(--delta-color), var(--process-color));
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .start-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(59, 130, 246, 0.3);
+        }
+        
+        .start-button:active {
+            transform: translateY(0);
+        }
+        
+        /* Loading state */
+        .loading-text {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-top: 16px;
+        }
+        
+        .loading-text.hidden {
+            display: none;
+        }
+        
+        /* Alert flash */
+        .alert-flash {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(245, 158, 11, 0.15);
+            pointer-events: none;
+            opacity: 0;
+            z-index: 50;
+            transition: opacity 0.1s ease;
+        }
+        
+        .alert-flash.active {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="alert-flash" id="alertFlash"></div>
+    
+    <div class="start-overlay" id="startOverlay">
+        <div class="start-title">EAR Meter</div>
+        <div class="start-subtitle">Analisi ontologica in tempo reale</div>
+        
+        <div class="ear-explanation">
+            <div class="ear-item">
+                <div class="ear-symbol" style="color: var(--delta-color)">Δ</div>
+                <div class="ear-desc">
+                    <strong>Distinzione</strong>
+                    <span>Confini, strutture, separazioni</span>
+                </div>
+            </div>
+            <div class="ear-item">
+                <div class="ear-symbol" style="color: var(--relation-color)">⇄</div>
+                <div class="ear-desc">
+                    <strong>Relazione</strong>
+                    <span>Connessioni, superfici, mediazioni</span>
+                </div>
+            </div>
+            <div class="ear-item">
+                <div class="ear-symbol" style="color: var(--process-color)">⟳</div>
+                <div class="ear-desc">
+                    <strong>Processo</strong>
+                    <span>Movimento, agenti, trasformazioni</span>
+                </div>
+            </div>
+        </div>
+        
+        <button class="start-button" id="startButton">Avvia Camera</button>
+        <div class="loading-text hidden" id="loadingText">Caricamento modello AI...</div>
+    </div>
+    
+    <div class="container">
+        <div class="header">
+            <div class="logo">EAR <span>Meter</span></div>
+            <div class="status-badge">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">In attesa</span>
+            </div>
+        </div>
+        
+        <div class="video-container">
+            <video id="video" autoplay playsinline muted></video>
+            <canvas id="canvas-segmentation"></canvas>
+            <div class="video-overlay">
+                <div class="fps-counter" id="fpsCounter">-- fps</div>
+                <div class="k-value" id="kValue">
+                    K <span id="kNumber">0.00</span>
+                    <small>/ 0.35</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="meters">
+            <div class="meter">
+                <div class="meter-label delta">Δ</div>
+                <div class="meter-bar-container">
+                    <div class="meter-bar delta" id="barDelta" style="width: 0%"></div>
+                </div>
+                <div class="meter-value" id="valueDelta">0%</div>
+                <div class="meter-name">distinzione</div>
+            </div>
+            <div class="meter">
+                <div class="meter-label relation">⇄</div>
+                <div class="meter-bar-container">
+                    <div class="meter-bar relation" id="barRelation" style="width: 0%"></div>
+                </div>
+                <div class="meter-value" id="valueRelation">0%</div>
+                <div class="meter-name">relazione</div>
+            </div>
+            <div class="meter">
+                <div class="meter-label process">⟳</div>
+                <div class="meter-bar-container">
+                    <div class="meter-bar process" id="barProcess" style="width: 0%"></div>
+                </div>
+                <div class="meter-value" id="valueProcess">0%</div>
+                <div class="meter-name">processo</div>
+            </div>
+        </div>
+        
+        <div class="state-section">
+            <div class="state-card">
+                <h3>Stato</h3>
+                <div class="state-value stable" id="stateValue">STABILE</div>
+            </div>
+            <div class="state-card">
+                <h3>Dominante</h3>
+                <div class="state-value" id="dominantValue">--</div>
+            </div>
+            <div class="state-card">
+                <h3>Transizioni</h3>
+                <div class="state-value" id="transitionCount">0</div>
+            </div>
+        </div>
+        
+        <div class="timeline">
+            <h3>Timeline K (ultimi 30s)</h3>
+            <div class="timeline-bar">
+                <canvas id="timeline-canvas"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // EAR Meter - Prototipo v1.0
+        
+        // Configurazione
+        const CONFIG = {
+            K_CRIT: 0.35,
+            UPDATE_INTERVAL: 250, // ms tra analisi
+            TIMELINE_DURATION: 30, // secondi
+            SMOOTHING: 0.3 // smoothing per le barre
+        };
+        
+        // Stato globale
+        let model = null;
+        let video = null;
+        let isRunning = false;
+        let lastEAR = { delta: 0.33, relation: 0.33, process: 0.33 };
+        let currentEAR = { delta: 0.33, relation: 0.33, process: 0.33 };
+        let kHistory = [];
+        let transitionCount = 0;
+        let lastFrameTime = Date.now();
+        let frameCount = 0;
+        let fps = 0;
+        
+        // Mappatura classi DeepLab → EAR
+        // DeepLab Pascal VOC classes:
+        // 0: background, 1: aeroplane, 2: bicycle, 3: bird, 4: boat,
+        // 5: bottle, 6: bus, 7: car, 8: cat, 9: chair,
+        // 10: cow, 11: diningtable, 12: dog, 13: horse, 14: motorbike,
+        // 15: person, 16: pottedplant, 17: sheep, 18: sofa, 19: train, 20: tvmonitor
+        
+        const CLASS_TO_EAR = {
+            0: 'relation',    // background → ⇄ (sfondo connettivo)
+            1: 'process',     // aeroplane → ⟳
+            2: 'process',     // bicycle → ⟳
+            3: 'process',     // bird → ⟳
+            4: 'process',     // boat → ⟳
+            5: 'delta',       // bottle → Δ
+            6: 'process',     // bus → ⟳
+            7: 'process',     // car → ⟳
+            8: 'process',     // cat → ⟳
+            9: 'delta',       // chair → Δ
+            10: 'process',    // cow → ⟳
+            11: 'delta',      // diningtable → Δ
+            12: 'process',    // dog → ⟳
+            13: 'process',    // horse → ⟳
+            14: 'process',    // motorbike → ⟳
+            15: 'process',    // person → ⟳
+            16: 'delta',      // pottedplant → Δ
+            17: 'process',    // sheep → ⟳
+            18: 'delta',      // sofa → Δ
+            19: 'process',    // train → ⟳
+            20: 'delta'       // tvmonitor → Δ
+        };
+        
+        // Colori per visualizzazione segmentazione
+        const EAR_COLORS = {
+            delta: [59, 130, 246],     // blu
+            relation: [16, 185, 129],   // verde
+            process: [239, 68, 68]      // rosso
+        };
+        
+        // Elementi DOM
+        const elements = {
+            startOverlay: document.getElementById('startOverlay'),
+            startButton: document.getElementById('startButton'),
+            loadingText: document.getElementById('loadingText'),
+            video: document.getElementById('video'),
+            canvasSeg: document.getElementById('canvas-segmentation'),
+            statusDot: document.getElementById('statusDot'),
+            statusText: document.getElementById('statusText'),
+            fpsCounter: document.getElementById('fpsCounter'),
+            kValue: document.getElementById('kValue'),
+            kNumber: document.getElementById('kNumber'),
+            barDelta: document.getElementById('barDelta'),
+            barRelation: document.getElementById('barRelation'),
+            barProcess: document.getElementById('barProcess'),
+            valueDelta: document.getElementById('valueDelta'),
+            valueRelation: document.getElementById('valueRelation'),
+            valueProcess: document.getElementById('valueProcess'),
+            stateValue: document.getElementById('stateValue'),
+            dominantValue: document.getElementById('dominantValue'),
+            transitionCount: document.getElementById('transitionCount'),
+            timelineCanvas: document.getElementById('timeline-canvas'),
+            alertFlash: document.getElementById('alertFlash')
+        };
+        
+        // Inizializzazione
+        elements.startButton.addEventListener('click', startApp);
+        
+        async function startApp() {
+            elements.startButton.style.display = 'none';
+            elements.loadingText.classList.remove('hidden');
+            elements.loadingText.textContent = 'Caricamento modello AI...';
+            
+            try {
+                // Carica modello DeepLab
+                model = await deeplab.load({
+                    base: 'pascal',
+                    quantizationBytes: 2
+                });
+                
+                elements.loadingText.textContent = 'Accesso alla camera...';
+                
+                // Accedi alla camera
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { 
+                        facingMode: 'environment',
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    },
+                    audio: false
+                });
+                
+                elements.video.srcObject = stream;
+                await elements.video.play();
+                
+                // Setup canvas
+                elements.canvasSeg.width = elements.video.videoWidth || 640;
+                elements.canvasSeg.height = elements.video.videoHeight || 480;
+                
+                // Setup timeline canvas
+                const tlCanvas = elements.timelineCanvas;
+                tlCanvas.width = tlCanvas.offsetWidth * 2;
+                tlCanvas.height = tlCanvas.offsetHeight * 2;
+                
+                // Nascondi overlay e avvia
+                elements.startOverlay.classList.add('hidden');
+                elements.statusDot.classList.add('active');
+                elements.statusText.textContent = 'Attivo';
+                
+                isRunning = true;
+                analyzeLoop();
+                
+            } catch (error) {
+                console.error('Errore:', error);
+                elements.loadingText.textContent = 'Errore: ' + error.message;
+            }
+        }
+        
+        async function analyzeLoop() {
+            if (!isRunning) return;
+            
+            const startTime = performance.now();
+            
+            try {
+                // Esegui segmentazione
+                const segmentation = await model.segment(elements.video);
+                
+                // Analizza distribuzione EAR
+                const earDistribution = analyzeSegmentation(segmentation);
+                
+                // Smooth values
+                currentEAR.delta = lerp(currentEAR.delta, earDistribution.delta, CONFIG.SMOOTHING);
+                currentEAR.relation = lerp(currentEAR.relation, earDistribution.relation, CONFIG.SMOOTHING);
+                currentEAR.process = lerp(currentEAR.process, earDistribution.process, CONFIG.SMOOTHING);
+                
+                // Calcola K (transizione)
+                const k = calculateK(lastEAR, currentEAR);
+                
+                // Aggiorna storia K
+                kHistory.push({ time: Date.now(), k: k });
+                // Mantieni solo ultimi 30 secondi
+                const cutoff = Date.now() - CONFIG.TIMELINE_DURATION * 1000;
+                kHistory = kHistory.filter(h => h.time > cutoff);
+                
+                // Controlla soglia
+                if (k > CONFIG.K_CRIT) {
+                    transitionCount++;
+                    triggerAlert();
+                }
+                
+                // Aggiorna UI
+                updateUI(currentEAR, k);
+                
+                // Visualizza segmentazione
+                visualizeSegmentation(segmentation);
+                
+                // Salva stato precedente
+                lastEAR = { ...currentEAR };
+                
+                // Calcola FPS
+                frameCount++;
+                if (Date.now() - lastFrameTime > 1000) {
+                    fps = frameCount;
+                    frameCount = 0;
+                    lastFrameTime = Date.now();
+                    elements.fpsCounter.textContent = fps + ' fps';
+                }
+                
+            } catch (error) {
+                console.error('Errore analisi:', error);
+            }
+            
+            // Prossimo frame
+            const elapsed = performance.now() - startTime;
+            const delay = Math.max(CONFIG.UPDATE_INTERVAL - elapsed, 10);
+            setTimeout(analyzeLoop, delay);
+        }
+        
+        function analyzeSegmentation(segmentation) {
+            const data = segmentation.segmentationMap;
+            const counts = { delta: 0, relation: 0, process: 0 };
+            
+            for (let i = 0; i < data.length; i++) {
+                const classId = data[i];
+                const earType = CLASS_TO_EAR[classId] || 'relation';
+                counts[earType]++;
+            }
+            
+            const total = data.length;
+            return {
+                delta: counts.delta / total,
+                relation: counts.relation / total,
+                process: counts.process / total
+            };
+        }
+        
+        function calculateK(prev, curr) {
+            const dDelta = curr.delta - prev.delta;
+            const dRelation = curr.relation - prev.relation;
+            const dProcess = curr.process - prev.process;
+            return Math.sqrt(dDelta*dDelta + dRelation*dRelation + dProcess*dProcess);
+        }
+        
+        function updateUI(ear, k) {
+            // Barre
+            elements.barDelta.style.width = (ear.delta * 100) + '%';
+            elements.barRelation.style.width = (ear.relation * 100) + '%';
+            elements.barProcess.style.width = (ear.process * 100) + '%';
+            
+            // Valori
+            elements.valueDelta.textContent = Math.round(ear.delta * 100) + '%';
+            elements.valueRelation.textContent = Math.round(ear.relation * 100) + '%';
+            elements.valueProcess.textContent = Math.round(ear.process * 100) + '%';
+            
+            // K value
+            elements.kNumber.textContent = k.toFixed(3);
+            if (k > CONFIG.K_CRIT) {
+                elements.kValue.classList.add('alert');
+            } else {
+                elements.kValue.classList.remove('alert');
+            }
+            
+            // Stato
+            if (k > CONFIG.K_CRIT) {
+                elements.stateValue.textContent = 'TRANSIZIONE';
+                elements.stateValue.className = 'state-value alert';
+            } else if (k > CONFIG.K_CRIT * 0.5) {
+                elements.stateValue.textContent = 'VARIAZIONE';
+                elements.stateValue.className = 'state-value transition';
+            } else {
+                elements.stateValue.textContent = 'STABILE';
+                elements.stateValue.className = 'state-value stable';
+            }
+            
+            // Dominante
+            const max = Math.max(ear.delta, ear.relation, ear.process);
+            if (max === ear.delta) {
+                elements.dominantValue.textContent = 'Δ';
+                elements.dominantValue.style.color = 'var(--delta-color)';
+            } else if (max === ear.relation) {
+                elements.dominantValue.textContent = '⇄';
+                elements.dominantValue.style.color = 'var(--relation-color)';
+            } else {
+                elements.dominantValue.textContent = '⟳';
+                elements.dominantValue.style.color = 'var(--process-color)';
+            }
+            
+            // Contatore transizioni
+            elements.transitionCount.textContent = transitionCount;
+            
+            // Timeline
+            drawTimeline();
+        }
+        
+        function visualizeSegmentation(segmentation) {
+            const ctx = elements.canvasSeg.getContext('2d');
+            const width = segmentation.width;
+            const height = segmentation.height;
+            
+            // Ridimensiona canvas se necessario
+            if (elements.canvasSeg.width !== width || elements.canvasSeg.height !== height) {
+                elements.canvasSeg.width = width;
+                elements.canvasSeg.height = height;
+            }
+            
+            const imageData = ctx.createImageData(width, height);
+            const data = segmentation.segmentationMap;
+            
+            for (let i = 0; i < data.length; i++) {
+                const classId = data[i];
+                const earType = CLASS_TO_EAR[classId] || 'relation';
+                const color = EAR_COLORS[earType];
+                
+                const idx = i * 4;
+                imageData.data[idx] = color[0];
+                imageData.data[idx + 1] = color[1];
+                imageData.data[idx + 2] = color[2];
+                imageData.data[idx + 3] = classId === 0 ? 30 : 120; // Trasparenza
+            }
+            
+            ctx.putImageData(imageData, 0, 0);
+        }
+        
+        function drawTimeline() {
+            const canvas = elements.timelineCanvas;
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            // Clear
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+            ctx.fillRect(0, 0, width, height);
+            
+            if (kHistory.length < 2) return;
+            
+            const now = Date.now();
+            const duration = CONFIG.TIMELINE_DURATION * 1000;
+            
+            // Disegna linea K_crit
+            const critY = height - (CONFIG.K_CRIT / 0.5) * height;
+            ctx.strokeStyle = 'rgba(245, 158, 11, 0.5)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(0, critY);
+            ctx.lineTo(width, critY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Disegna curva K
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            
+            let started = false;
+            for (const point of kHistory) {
+                const x = ((point.time - (now - duration)) / duration) * width;
+                const y = height - Math.min(point.k / 0.5, 1) * height;
+                
+                if (!started) {
+                    ctx.moveTo(x, y);
+                    started = true;
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.stroke();
+            
+            // Punti sopra soglia
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.8)';
+            for (const point of kHistory) {
+                if (point.k > CONFIG.K_CRIT) {
+                    const x = ((point.time - (now - duration)) / duration) * width;
+                    const y = height - Math.min(point.k / 0.5, 1) * height;
+                    ctx.beginPath();
+                    ctx.arc(x, y, 6, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        }
+        
+        function triggerAlert() {
+            // Vibrazione (se disponibile)
+            if (navigator.vibrate) {
+                navigator.vibrate([100, 50, 100]);
+            }
+            
+            // Flash visivo
+            elements.alertFlash.classList.add('active');
+            setTimeout(() => {
+                elements.alertFlash.classList.remove('active');
+            }, 200);
+        }
+        
+        function lerp(a, b, t) {
+            return a + (b - a) * t;
+        }
+        
+        // Resize timeline canvas on window resize
+        window.addEventListener('resize', () => {
+            const tlCanvas = elements.timelineCanvas;
+            tlCanvas.width = tlCanvas.offsetWidth * 2;
+            tlCanvas.height = tlCanvas.offsetHeight * 2;
+        });
+    </script>
+</body>
+</html>
